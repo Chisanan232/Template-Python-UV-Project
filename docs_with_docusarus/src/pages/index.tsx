@@ -34,7 +34,7 @@ function HomepageHeader() {
           <Link
             className="button button--secondary button--lg"
             to={stableDocsPath}>
-            ClickUp-MCP-Server Documentation
+            UV-Template Documentation
           </Link>
         </div>
       </div>
