@@ -98,7 +98,7 @@ jobs:
 
       - name: Verify the ClickUp API token
         run: |
-          curl -s https://api.something-neeed-to-test.com/api/v2/team -H "Authorization: ${{ secrets.e2e_test_api_token }}"
+          curl -s https://api.clickup.com/api/v2/team -H "Authorization: ${{ secrets.e2e_test_api_token }}"
 
       - name: Run the specific tests with pytest
         if: ${{ inputs.test_type == '' }}
