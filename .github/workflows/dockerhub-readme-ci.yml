@@ -3,7 +3,7 @@ name: dockerhub-readme-ci
 on:
   push:
     branches:
-      - "master"
+      - "your_base_branch"
     paths:
 #     For GitHub Action
       - ".github/workflows/docker-update-readme.yml"
@@ -21,8 +21,8 @@ on:
 #      - "README_DOCKERHUB.md"
 
 env:
-  TEST_TAG: user/src-project:test
-  DOCKER_HUB_SHORT_DESCRIPTION: Your project short description
+  TEST_TAG: user/clickup-mcp-server:test
+  DOCKER_HUB_SHORT_DESCRIPTION: 🦾 A strong MCP server for ClickUp.
 
 jobs:
   update-readme:

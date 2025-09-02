@@ -5,16 +5,18 @@ on:
   # For the push event, it only runs building and testing.
   push:
     branches:
-      - "master_your_base_branch"
+      - "your_base_branch"
+      - "!**e2e"
+      - "!e2e**"
     paths:
 #     For GitHub Action
-      - ".github/workflows/**ci.yaml"
+      - ".github/workflows/ci.yaml"
       - ".github/workflows/rw_build_and_test.yaml"
       - ".github/workflows/rw_uv_run_test.yaml"
       - ".github/workflows/rw_run_all_test_and_record.yaml"
       - ".github/workflows/rw_uv_run_test_with_multi_py_versions.yaml"
 #     For source code and test
-      - "src/**/*.py"
+      - "clickup_mcp/**/*.py"
       - "!**/__pkg_info__.py"
       - "test/**/*.py"
 #     For shell script for CI
@@ -32,16 +34,18 @@ on:
   # or other checking, i.e., record the test report by CodeCov and check the code quality by SonarQube.
   pull_request:
     branches:
-      - "master_your_base_branch"
+      - "your_base_branch"
+      - "!**e2e"
+      - "!e2e**"
     paths:
 #     For GitHub Action
-      - ".github/workflows/**ci.yaml"
+      - ".github/workflows/ci.yaml"
       - ".github/workflows/rw_build_and_test.yaml"
       - ".github/workflows/rw_uv_run_test.yaml"
       - ".github/workflows/rw_run_all_test_and_record.yaml"
       - ".github/workflows/rw_uv_run_test_with_multi_py_versions.yaml"
 #     For source code and test
-      - "src/**/*.py"
+      - "clickup_mcp/**/*.py"
       - "!**/__pkg_info__.py"
       - "test/**/*.py"
 #     For shell script for CI
