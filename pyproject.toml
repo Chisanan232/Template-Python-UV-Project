@@ -3,13 +3,13 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "<your lib name>"
+name = "test-python-uv-project-template"
 version = "0.0.0"
-description = "Your lib description"
-authors = [{ name = "<your GitHub name>", email = "<your email address>" }]
+description = "🐍 Just a template of Python project be managed by UV."
+authors = [{ name = "Chisanan232", email = "chi10211201@cycu.org.tw" }]
 requires-python = ">=3.12,<4.0"
 readme = "README.md"
-license = { text = "MIT" }
+license = { file = "LICENSE" }
 keywords = []
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -26,8 +26,8 @@ classifiers = [
 dependencies = []
 
 [project.urls]
-Homepage = "https://github.com/<your GitHub name>/<new repo>"
-Repository = "https://github.com/<your GitHub name>/<new repo>"
+Homepage = "https://github.com/Chisanan232/Template-Python-UV-Project"
+Repository = "https://github.com/Chisanan232/Template-Python-UV-Project"
 
 [dependency-groups]
 dev = [

@@ -5,16 +5,16 @@ import remarkGfm from 'remark-gfm';
 import remarkMdxCodeMeta from 'remark-mdx-code-meta';
 
 const config: Config = {
-  title: 'UV-Template',
-  tagline: '👋 Just a template for Python uv project.',
+  title: 'Python-uv-project-template',
+  tagline: '🐍 Just a template of Python project be managed by UV.',
   favicon: 'img/python_logo_icon.png',
 
   // Set the production url of your site here
-  url: 'https://<your GitHub username>.github.io',
+  url: 'https://chisanan232.github.io',
   // Set the /<baseUrl>/ pathname under which your site is served
   baseUrl: '/uv-template/',
-  projectName: '<your GitHub username>.github.io',
-  organizationName: '<your GitHub username>',
+  projectName: 'chisanan232.github.io',
+  organizationName: 'Chisanan232',
   trailingSlash: false,
 
   onBrokenLinks: 'warn',
@@ -64,7 +64,7 @@ const config: Config = {
         showLastUpdateTime: true,
         showLastUpdateAuthor: true,
         editUrl:
-          'https://github.com/<your GitHub username>/<your GitHub repo>/tree/master/docs/',
+          'https://github.com/Chisanan232/Template-Python-UV-Project/tree/master/docs/',
         versions: {
           current: {
             label: 'Next',
@@ -88,7 +88,7 @@ const config: Config = {
         showLastUpdateTime: true,
         showLastUpdateAuthor: true,
         editUrl:
-          'https://github.com/<your GitHub username>/<your GitHub repo>/tree/master/docs/',
+          'https://github.com/Chisanan232/Template-Python-UV-Project/tree/master/docs/',
         versions: {
           current: {
             label: 'Next',
@@ -109,7 +109,7 @@ const config: Config = {
         routeBasePath: 'blog',
         showReadingTime: true,
         editUrl:
-          'https://github.com/<your GitHub username>/<your GitHub repo>/tree/master/docs/',
+          'https://github.com/Chisanan232/Template-Python-UV-Project/tree/master/docs/',
       },
     ],
     [
@@ -180,7 +180,7 @@ const config: Config = {
           dropdownItemsAfter: [],
         },
         {
-          href: 'https://github.com/<your GitHub username>/<your GitHub repo>',
+          href: 'https://github.com/Chisanan232/Template-Python-UV-Project',
           label: 'GitHub',
           position: 'right',
         },
@@ -211,11 +211,11 @@ const config: Config = {
           items: [
             {
               label: 'GitHub Issues',
-              href: 'https://github.com/<your GitHub username>/<your GitHub repo>/issues',
+              href: 'https://github.com/Chisanan232/Template-Python-UV-Project/issues',
             },
             {
               label: 'GitHub Discussions',
-              href: 'https://github.com/<your GitHub username>/<your GitHub repo>/discussions',
+              href: 'https://github.com/Chisanan232/Template-Python-UV-Project/discussions',
             },
           ],
         },
@@ -224,12 +224,12 @@ const config: Config = {
           items: [
             {
               label: 'GitHub Repository',
-              href: 'https://github.com/<your GitHub username>/<your GitHub repo>',
+              href: 'https://github.com/Chisanan232/Template-Python-UV-Project',
             },
           ],
         },
       ],
-      copyright: `Copyright ${new Date().getFullYear()} - PRESENT, ClickUp MCP Server is owned by <a href="https://github.com/your GitHub username">@Your_GitHub_username</a>.<br />Built with <a href="https://docusaurus.io/">Docusaurus</a>.`,
+      copyright: `Copyright ${new Date().getFullYear()} - PRESENT, Python-uv-project-template is owned by <a href="https://github.com/Chisanan232">@Chisanan232</a>.<br />Built with <a href="https://docusaurus.io/">Docusaurus</a>.`,
     },
     prism: {
       theme: prismThemes.github,
@@ -245,7 +245,7 @@ const config: Config = {
       tagName: 'link',
       attributes: {
         rel: 'canonical',
-        href: 'https://<your GitHub username>.github.io/<your GitHub repo>/docs/introduction',
+        href: 'https://chisanan232.github.io/Template-Python-UV-Project/docs/introduction',
       },
     },
   ],
