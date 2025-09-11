@@ -137,12 +137,12 @@ const config: Config = {
 
   themeConfig: {
     // Replace with your project's social card
-    image: 'img/clickup_mcp_server_logo.png',
+    image: 'img/python_logo_icon.png',
     navbar: {
       title: 'UV-Template',
       logo: {
         alt: 'My Site Logo',
-        src: 'img/clickup_mcp_server_logo.png',
+        src: 'img/python_logo_icon.png',
       },
       items: [
         {
