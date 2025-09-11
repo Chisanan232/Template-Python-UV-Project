@@ -12,11 +12,6 @@ on:
           - patch
           - minor
           - major
-      notes:
-        description: 'Staging release notes'
-        required: false
-        default: 'Staging release for testing'
-        type: string
 
 permissions:
   contents: write
@@ -39,6 +34,9 @@ jobs:
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
+          # Only use ref for push events to master to get latest commit after version bump
+          # In PR events, github.ref_name gives merge refs like "109/merge" which breaks checkout
+          ref: ${{ github.event_name == 'push' && github.ref_name == 'master' && github.ref_name || '' }}
 
       - name: Setup Python with UV
         uses: ./.github/actions/setup-python-uv
@@ -65,7 +63,7 @@ jobs:
           esac
           
           echo "Computing staging version with: uv version --dry-run $BUMP_FLAG"
-          BASE_VERSION=$(uv version --dry-run $BUMP_FLAG)
+          BASE_VERSION=$(uv version --short --dry-run $BUMP_FLAG)
           RC_VERSION="${BASE_VERSION}-rc.0"
           
           echo "version=$BASE_VERSION" >> $GITHUB_OUTPUT
@@ -75,12 +73,14 @@ jobs:
           echo "RC version: $RC_VERSION"
 
   build_git-tag_and_create_github-release:
-    uses: ./.github/workflows/rw_build_git-tag_and_create_github-release.yaml
+    uses: ./.github/workflows/rw_build_git-tag_and_create_github-release_v2.yaml
     needs: compute-version
+    with:
+      version: ${{ needs.compute-version.outputs.rc_version }}
+      checkout-sha: ${{ github.sha }}
+      debug_mode: true
     secrets:
       github_auth_token: ${{ secrets.GITHUB_TOKEN }}
-    with:
-      debug_mode: 'true'
 
   pypi-test:
     uses: ./.github/workflows/rw_python_package.yaml
@@ -88,17 +88,35 @@ jobs:
     with:
       operation: 'publish-testpypi'
       version: ${{ needs.compute-version.outputs.version }}
+      checkout-sha: ${{ github.sha }}
       artifact-name: 'staging-python-package'
 
-  ghcr-rc:
+  dockerhub-rc:
+    name: Staging Release to DockerHub
     uses: ./.github/workflows/rw_docker_operations.yaml
-    needs: compute-version
+    needs: [compute-version, build_git-tag_and_create_github-release]
     secrets:
       dockerhub-user: ${{ secrets.DOCKERHUB_USERNAME }}
       registry-token: ${{ secrets.DOCKERHUB_TOKEN }}
     with:
       operation: 'push'
+      registry: 'docker.io'
       version: ${{ needs.compute-version.outputs.rc_version }}
+      checkout-sha: ${{ github.sha }}
+      enable-sbom: true
+      enable-signing: true
+      health-check-port: '8000'
+      health-check-path: '/health'
+
+  ghcr-rc:
+    name: Staging Release to GHCR
+    uses: ./.github/workflows/rw_docker_operations.yaml
+    needs: [compute-version, build_git-tag_and_create_github-release]
+    with:
+      operation: 'push'
+      registry: 'ghcr.io'
+      version: ${{ needs.compute-version.outputs.rc_version }}
+      checkout-sha: ${{ github.sha }}
       enable-sbom: true
       enable-signing: true
       health-check-port: '8000'
@@ -110,6 +128,7 @@ jobs:
     with:
       operation: 'deploy-preview'
       version: ${{ needs.compute-version.outputs.rc_version }}
+      checkout-sha: ${{ github.sha }}
       preview-branch: 'docs-preview'
       upload-artifacts: true
 
@@ -151,7 +170,6 @@ jobs:
             echo ""
             echo "3. Review documentation preview in docs-preview branch"
             echo ""
-            echo "📝 Release Notes: ${{ inputs.notes }}"
           else
             echo "❌ Some staging deployment steps failed. Check the logs above."
             exit 1

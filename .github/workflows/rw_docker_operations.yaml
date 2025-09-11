@@ -53,6 +53,11 @@ on:
         required: false
         default: true
         type: boolean
+      checkout-sha:
+        description: 'Specific commit SHA to checkout (for post-version-bump code)'
+        required: false
+        default: ''
+        type: string
 
     secrets:
       dockerhub-user:
@@ -92,11 +97,14 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
+        with:
+          # Use specific SHA if provided (for post-version-bump code), otherwise use conditional ref logic
+          ref: ${{ inputs.checkout-sha != '' && inputs.checkout-sha || (github.event_name == 'push' && github.ref_name == 'master' && github.ref_name || '') }}
 
       - name: Initial Docker image tag name
         id: initial-docker-tag-meta
         run: |
-          image_name=$(echo "${{ inputs.registry }}/${{ inputs.image-name }}" | cut -d/ -f1 | tr '[:upper:]' '[:lower:]')
+          image_name=$(echo "${{ inputs.registry }}/${{ inputs.image-name }}" | tr '[:upper:]' '[:lower:]')
           echo "🐳 Docker image name: $image_name"
           echo "image_name=$image_name" >> "$GITHUB_OUTPUT"
 
@@ -126,8 +134,8 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: ${{ inputs.registry }}
-          username: ${{ secrets.dockerhub-user }}
-          password: ${{ secrets.registry-token }}
+          username: ${{ inputs.registry == 'ghcr.io' && github.actor || secrets.dockerhub-user }}
+          password: ${{ inputs.registry == 'ghcr.io' && secrets.GITHUB_TOKEN || secrets.registry-token }}
 
       - name: Extract metadata
         id: meta
@@ -141,7 +149,7 @@ jobs:
       - name: Build Docker image
         if: contains(fromJSON('["build", "test", "push", "security-scan"]'), inputs.operation)
         id: build
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           push: ${{ inputs.operation == 'push' }}
@@ -270,7 +278,7 @@ jobs:
           
           # Step 1: Generate SBOM from Docker image
           echo "::group::Generating SBOM from Docker image"
-          if syft "$IMAGE_REF" -o spdx-json --file sbom-docker.spdx.json; then
+          if syft "$IMAGE_REF" --output spdx-json=sbom-docker.spdx.json; then
             echo "✅ SBOM generated from Docker image"
             PRIMARY_SBOM="sbom-docker.spdx.json"
           else
@@ -281,7 +289,7 @@ jobs:
           
           # Step 2: Fallback SBOM generation from workspace
           echo "::group::Generating fallback SBOM from workspace"
-          if syft . -o spdx-json --file sbom-workspace.spdx.json; then
+          if syft . --output spdx-json=sbom-workspace.spdx.json; then
             echo "✅ Fallback SBOM generated from workspace"
             FALLBACK_SBOM="sbom-workspace.spdx.json"
           else
@@ -367,15 +375,15 @@ jobs:
         if: inputs.enable-sbom && inputs.operation != 'security-scan'
         run: |
           echo "🔍 Generating SBOM..."
-          IMAGE_TAG="(echo '${{ steps.initial-docker-tag-meta.outputs.image_name }}:${{ inputs.version }}' | tr '[:upper:]' '[:lower:]')"
-          syft $IMAGE_TAG -o spdx-json --file sbom.spdx.json
+          IMAGE_TAG=$(echo '${{ steps.initial-docker-tag-meta.outputs.image_name }}:${{ inputs.version }}' | tr '[:upper:]' '[:lower:]')
+          syft $IMAGE_TAG --output spdx-json=sbom.spdx.json
           echo "✅ SBOM generated"
 
       - name: Upload security scan artifacts
         if: inputs.operation == 'security-scan'
         uses: actions/upload-artifact@v4
         with:
-          name: security-scan-${{ inputs.version }}
+          name: security-scan-${{ inputs.registry }}-${{ inputs.version }}
           path: |
             sbom*.spdx.json
             grype-*.json
@@ -386,7 +394,7 @@ jobs:
         if: inputs.enable-sbom && inputs.operation != 'security-scan'
         uses: actions/upload-artifact@v4
         with:
-          name: docker-sbom-${{ inputs.version }}
+          name: docker-sbom-${{ inputs.registry }}-${{ inputs.version }}
           path: sbom.spdx.json
           retention-days: 30
 

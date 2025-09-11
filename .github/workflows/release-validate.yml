@@ -3,10 +3,16 @@ name: Release Validation (Dry Run)
 on:
   pull_request:
     branches:
-      - your_base_branch
+      - <your_base_branch>
     paths:
       - .github/tag_and_release/**
       - pyproject.toml
+      - .github/workflows/release.yml
+      - .github/workflows/release**.yml
+      - .github/workflows/rw**.yaml
+      - "!.github/workflows/rw_build_and_test.yaml"
+      - "!.github/workflows/rw_run_all_test_and_record.yaml"
+      - "!.github/workflows/rw_uv_run_test_with_multi_py_versions.yaml"
   workflow_dispatch:
     inputs:
       level:
@@ -39,22 +45,47 @@ jobs:
       docs: 'auto'
       notes: 'Validation test run'
 
+  build_git-tag_and_create_github-release:
+    uses: ./.github/workflows/rw_build_git-tag_and_create_github-release_v2.yaml
+    needs: intent-parse
+    with:
+      version: "1.0.0-validation"  # Test version for validation
+      debug_mode: true
+    secrets:
+      github_auth_token: ${{ secrets.GITHUB_TOKEN }}
+
   python-build-check:
     uses: ./.github/workflows/rw_python_package.yaml
-    needs: intent-parse
+    needs: build_git-tag_and_create_github-release
     with:
       operation: 'test'
       artifact-name: 'validation-python-package'
 
-  docker-build-smoke:
+  docker-build-dockerhub:
+    name: Validate DockerHub Build
     uses: ./.github/workflows/rw_docker_operations.yaml
-    needs: intent-parse
+    needs: build_git-tag_and_create_github-release
     with:
       operation: 'test'
+      registry: 'docker.io'
       image-name: ${{ github.repository }}
       version: 'validation-test'
       health-check-port: '8000'
       health-check-path: '/health'
+      enable-signing: true
+
+  docker-build-ghcr:
+    name: Validate GHCR Build
+    uses: ./.github/workflows/rw_docker_operations.yaml
+    needs: build_git-tag_and_create_github-release
+    with:
+      operation: 'test'
+      registry: 'ghcr.io'
+      image-name: ${{ github.repository }}
+      version: 'validation-test'
+      health-check-port: '8000'
+      health-check-path: '/health'
+      enable-signing: true
 
   docs-build:
     uses: ./.github/workflows/rw_docs_operations.yaml
@@ -64,18 +95,21 @@ jobs:
       upload-artifacts: true
 
   supply-chain-loopback:
+    name: Security Scan (Supply Chain)
     uses: ./.github/workflows/rw_docker_operations.yaml
-    needs: docker-build-smoke
+    needs: [docker-build-dockerhub, docker-build-ghcr]
     with:
       operation: 'security-scan'
+      registry: 'docker.io'  # Use DockerHub build for security scan
       image-name: ${{ github.repository }}
-      version: 'validation-test'  # 🔧 FIX: Use same tag as build job
+      version: 'validation-test'
       enable-sbom: true
+      enable-signing: true
 
   validation-summary:
     name: Validation Summary
     runs-on: ubuntu-latest
-    needs: [intent-parse, python-build-check, docker-build-smoke, docs-build, supply-chain-loopback]
+    needs: [intent-parse, python-build-check, docker-build-dockerhub, docker-build-ghcr, docs-build, supply-chain-loopback]
     if: always()
     steps:
       - name: Check validation results
@@ -84,14 +118,16 @@ jobs:
           echo ""
           echo "Intent Parsing: ${{ needs.intent-parse.result }}"
           echo "Python Build: ${{ needs.python-build-check.result }}"
-          echo "Docker Build: ${{ needs.docker-build-smoke.result }}"
+          echo "DockerHub Build: ${{ needs.docker-build-dockerhub.result }}"
+          echo "GHCR Build: ${{ needs.docker-build-ghcr.result }}"
           echo "Docs Build: ${{ needs.docs-build.result }}"
           echo "Supply Chain: ${{ needs.supply-chain-loopback.result }}"
           echo ""
           
           if [[ "${{ needs.intent-parse.result }}" == "success" && \
                 "${{ needs.python-build-check.result }}" == "success" && \
-                "${{ needs.docker-build-smoke.result }}" == "success" && \
+                "${{ needs.docker-build-dockerhub.result }}" == "success" && \
+                "${{ needs.docker-build-ghcr.result }}" == "success" && \
                 "${{ needs.docs-build.result }}" == "success" && \
                 "${{ needs.supply-chain-loopback.result }}" == "success" ]]; then
             echo "✅ All validation checks passed! Release process is ready."
