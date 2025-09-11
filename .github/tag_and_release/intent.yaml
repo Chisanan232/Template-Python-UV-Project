@@ -3,7 +3,7 @@
 # If this file doesn't exist, defaults will be used
 
 release: true
-level: auto  # auto | patch | minor | major
+level: patch  # auto | patch | minor | major
 artifacts:
   python: auto  # auto | force | skip
   docker: auto  # auto | force | skip
@@ -15,7 +15,7 @@ artifacts:
       - docs            # Main documentation section
       - dev             # Development/contributor documentation  
 #      - api             # API reference documentation
-    strategy: changed   # changed | always - When to version sections
+    strategy: always   # changed | always - When to version sections
     
   # Legacy format (still supported for backward compatibility):
   # docs: auto    # auto | force | skip
