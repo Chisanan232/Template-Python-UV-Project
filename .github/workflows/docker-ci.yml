@@ -8,7 +8,7 @@ on:
 #     For GitHub Action
       - ".github/workflows/docker-ci.yml"
 #     For source code and test
-      - "clickup_mcp/**/*.py"
+      - "<your_package_name>/**/*.py"
       - "!**/__pkg_info__.py"
 #     For docker configuration and shell script for running by Docker
       - "Dockerfile"
@@ -26,7 +26,7 @@ on:
 #     For GitHub Action
       - ".github/workflows/docker-ci.yml"
 #     For source code and test
-      - "clickup_mcp/**/*.py"
+      - "<your_package_name>/**/*.py"
       - "!**/__pkg_info__.py"
 #     For docker configuration and shell script for running by Docker
       - "Dockerfile"
@@ -36,8 +36,8 @@ on:
       - "uv.lock"
 
 env:
-  TEST_TAG: user/clickup-mcp-server:test
-  TEST_CONTAINER_NAME: clickup-mcp-server
+  TEST_TAG: user/<your_project_name>:test
+  TEST_CONTAINER_NAME: <your_project_name>
 
 jobs:
   image-check:
@@ -77,7 +77,7 @@ jobs:
 
       - name: Test
         run: |
-          docker run -e API_TOKEN=${{ secrets.CLICKUP_API_TOKEN }} -d --rm --name ${{ env.TEST_CONTAINER_NAME }} ${{ env.TEST_TAG }}
+          docker run -e API_TOKEN=${{ secrets.<YOUR_API_TOKEN_SECRET> }} -d --rm --name ${{ env.TEST_CONTAINER_NAME }} ${{ env.TEST_TAG }}
           echo "Waiting for the server to start..."
           sleep 5
           docker logs ${{ env.TEST_CONTAINER_NAME }}

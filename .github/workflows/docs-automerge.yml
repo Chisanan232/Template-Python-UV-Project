@@ -27,7 +27,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           filters: |
             code:
-              - 'clickup_mcp/**'
+              - '<your_package_name>/**'
               - 'examples/**'
               - 'scripts/**'
               - 'test/**'
