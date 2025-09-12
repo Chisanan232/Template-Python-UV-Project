@@ -20,16 +20,16 @@
 
 🚧 The details of documentation ...
 
-## Reusable GitHub Actions Workflows
+## Reusable GitHub Actions Workflows & Actions
 
-This template provides a comprehensive set of **reusable GitHub Actions workflows** that can be called from other repositories to standardize CI/CD operations. Projects using this template can leverage these centralized workflows for consistent automation.
+This template provides a comprehensive set of **reusable GitHub Actions workflows and actions** that can be called from other repositories to standardize CI/CD operations. Projects using this template can leverage these centralized components for consistent automation.
 
 ### 🚀 Key Features
 
-- **Centralized Management**: All workflows are maintained in this template repository
+- **Centralized Management**: All workflows and actions are maintained in this template repository
 - **Standardized Operations**: Consistent CI/CD processes across all projects
-- **Easy Integration**: Simple workflow calls using external repository references
-- **Comprehensive Coverage**: Testing, building, releasing, Docker operations, and documentation
+- **Easy Integration**: Simple calls using external repository references
+- **Comprehensive Coverage**: Testing, building, releasing, Docker operations, documentation, and setup utilities
 
 ### 📋 Available Workflows
 
@@ -42,6 +42,12 @@ This template provides a comprehensive set of **reusable GitHub Actions workflow
 | `rw_parse_release_intent.yaml`                       | Release configuration parser | Determines release components          |
 | `rw_build_git-tag_and_create_github-release_v2.yaml` | Git tagging and releases     | Automated version management           |
 | `rw_docs_operations.yaml`                            | Documentation operations     | Build, version, deploy docs            |
+
+### 📦 Available Actions
+
+| Action | Purpose | Key Features |
+|--------|---------|--------------|
+| `setup-python-uv` | Python & UV setup with dependencies | Multi-version support, intelligent caching, flexible dependency groups |
 
 ### 🔧 Quick Start
 

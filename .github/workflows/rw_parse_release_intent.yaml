@@ -85,7 +85,7 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Python with UV
-        uses: ./.github/actions/setup-python-uv
+        uses: Chisanan232/Template-Python-UV-Project/.github/actions/setup-python-uv@master
         with:
           python-version: ${{ inputs.python-version }}
           install-dependencies: 'true'
