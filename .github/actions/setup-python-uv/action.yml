@@ -49,7 +49,7 @@ runs:
           echo "Skipping dependency installation"
         else
           echo "Installing dependencies: [${{ inputs.dependency-groups }}]"
-          uv pip install --system ".[${{ inputs.dependency-groups }}]"
+          uv sync --group ${{ inputs.dependency-groups }}
         fi
 
     - name: Verify installation
