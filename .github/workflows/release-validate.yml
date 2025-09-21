@@ -3,7 +3,7 @@ name: Release Validation (Dry Run)
 on:
   pull_request:
     branches:
-      - <your_base_branch>
+      - <your_base_branch>  # Replace with your main branch (e.g., master, main)
     paths:
       - .github/tag_and_release/**
       - pyproject.toml
@@ -35,6 +35,26 @@ concurrency:
   group: release-validate-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  # Project Configuration
+  PROJECT_NAME: ${{ vars.PROJECT_NAME || github.event.repository.name }}
+  BASE_BRANCH: ${{ vars.BASE_BRANCH || 'master' }}
+  PACKAGE_NAME: ${{ vars.PACKAGE_NAME || github.event.repository.name }}
+
+  # Docker Configuration
+  DOCKER_HEALTH_CHECK_PORT: ${{ vars.DOCKER_HEALTH_CHECK_PORT || '8000' }}
+  DOCKER_HEALTH_CHECK_PATH: ${{ vars.DOCKER_HEALTH_CHECK_PATH || '/health' }}
+  DOCKER_REGISTRY_DOCKERHUB: ${{ vars.DOCKER_REGISTRY_DOCKERHUB || 'docker.io' }}
+  DOCKER_REGISTRY_GHCR: ${{ vars.DOCKER_REGISTRY_GHCR || 'ghcr.io' }}
+
+  # Application Configuration
+  APP_ENV_VAR_NAME: ${{ vars.APP_ENV_VAR_NAME || 'API_TOKEN' }}
+  APP_ENV_VAR_VALUE: ${{ vars.APP_ENV_VAR_VALUE || 'test_token' }}
+
+  # Validation Configuration
+  VALIDATION_VERSION: ${{ vars.VALIDATION_VERSION || '1.0.0-validation' }}
+  VALIDATION_TEST_VERSION: ${{ vars.VALIDATION_TEST_VERSION || 'validation-test' }}
+
 jobs:
   intent-parse:
     uses: Chisanan232/Template-Python-UV-Project/.github/workflows/rw_parse_release_intent.yaml@master
@@ -49,7 +69,7 @@ jobs:
     uses: Chisanan232/Template-Python-UV-Project/.github/workflows/rw_build_git-tag_and_create_github-release_v2.yaml@master
     needs: intent-parse
     with:
-      version: "1.0.0-validation"  # Test version for validation
+      version: ${{ env.VALIDATION_VERSION }}  # Test version for validation
       debug_mode: true
     secrets:
       github_auth_token: ${{ secrets.GITHUB_TOKEN }}
@@ -67,12 +87,14 @@ jobs:
     needs: build_git-tag_and_create_github-release
     with:
       operation: 'test'
-      registry: 'docker.io'
+      registry: ${{ env.DOCKER_REGISTRY_DOCKERHUB }}
       image-name: ${{ github.repository }}
-      version: 'validation-test'
-      health-check-port: '8000'
-      health-check-path: '/health'
+      version: ${{ env.VALIDATION_TEST_VERSION }}
+      health-check-port: ${{ env.DOCKER_HEALTH_CHECK_PORT }}
+      health-check-path: ${{ env.DOCKER_HEALTH_CHECK_PATH }}
       enable-signing: true
+      app-env-var-name: ${{ env.APP_ENV_VAR_NAME }}
+      app-env-var-value: ${{ env.APP_ENV_VAR_VALUE }}
 
   docker-build-ghcr:
     name: Validate GHCR Build
@@ -80,12 +102,14 @@ jobs:
     needs: build_git-tag_and_create_github-release
     with:
       operation: 'test'
-      registry: 'ghcr.io'
+      registry: ${{ env.DOCKER_REGISTRY_GHCR }}
       image-name: ${{ github.repository }}
-      version: 'validation-test'
-      health-check-port: '8000'
-      health-check-path: '/health'
+      version: ${{ env.VALIDATION_TEST_VERSION }}
+      health-check-port: ${{ env.DOCKER_HEALTH_CHECK_PORT }}
+      health-check-path: ${{ env.DOCKER_HEALTH_CHECK_PATH }}
       enable-signing: true
+      app-env-var-name: ${{ env.APP_ENV_VAR_NAME }}
+      app-env-var-value: ${{ env.APP_ENV_VAR_VALUE }}
 
   docs-build:
     uses: Chisanan232/Template-Python-UV-Project/.github/workflows/rw_docs_operations.yaml@master
@@ -100,11 +124,13 @@ jobs:
     needs: [docker-build-dockerhub, docker-build-ghcr]
     with:
       operation: 'security-scan'
-      registry: 'docker.io'  # Use DockerHub build for security scan
+      registry: ${{ env.DOCKER_REGISTRY_DOCKERHUB }}  # Use DockerHub build for security scan
       image-name: ${{ github.repository }}
-      version: 'validation-test'
+      version: ${{ env.VALIDATION_TEST_VERSION }}
       enable-sbom: true
       enable-signing: true
+      app-env-var-name: ${{ env.APP_ENV_VAR_NAME }}
+      app-env-var-value: ${{ env.APP_ENV_VAR_VALUE }}
 
   validation-summary:
     name: Validation Summary

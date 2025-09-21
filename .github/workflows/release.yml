@@ -4,7 +4,7 @@ name: release
 on:
   push:
     branches:
-      - <your_base_branch>
+      - <your_base_branch>  # Replace with your main branch (e.g., master, main)
     paths:
       - .github/tag_and_release/release-**
   workflow_dispatch:
@@ -55,6 +55,32 @@ permissions:
 concurrency:
   group: release-${{ github.ref_name }}
   cancel-in-progress: false
+
+env:
+  # Project Configuration
+  PROJECT_NAME: ${{ vars.PROJECT_NAME || github.event.repository.name }}
+  BASE_BRANCH: ${{ vars.BASE_BRANCH || 'master' }}
+  PACKAGE_NAME: ${{ vars.PACKAGE_NAME || github.event.repository.name }}
+
+  # Git Configuration
+  GIT_COMMIT_EMAIL: ${{ vars.GIT_COMMIT_EMAIL || 'action@github.com' }}
+  GIT_COMMIT_NAME: ${{ vars.GIT_COMMIT_NAME || 'GitHub Action' }}
+
+  # Docker Configuration
+  DOCKER_HEALTH_CHECK_PORT: ${{ vars.DOCKER_HEALTH_CHECK_PORT || '8000' }}
+  DOCKER_HEALTH_CHECK_PATH: ${{ vars.DOCKER_HEALTH_CHECK_PATH || '/health' }}
+  DOCKER_REGISTRY_DOCKERHUB: ${{ vars.DOCKER_REGISTRY_DOCKERHUB || 'docker.io' }}
+  DOCKER_REGISTRY_GHCR: ${{ vars.DOCKER_REGISTRY_GHCR || 'ghcr.io' }}
+
+  # Application Configuration
+  APP_ENV_VAR_NAME: ${{ vars.APP_ENV_VAR_NAME || 'API_TOKEN' }}
+  APP_ENV_VAR_VALUE: ${{ vars.APP_ENV_VAR_VALUE || 'test_token' }}
+
+  # Documentation Configuration
+  DOCS_PREVIEW_BRANCH: ${{ vars.DOCS_PREVIEW_BRANCH || 'docs-preview' }}
+  DOCS_CI_CD_PATH: ${{ vars.DOCS_CI_CD_PATH || 'docs/contents/development/ci-cd.mdx' }}
+  DOCS_INSTALLATION_PATH: ${{ vars.DOCS_INSTALLATION_PATH || 'docs/contents/document/installation.md' }}
+  DOCS_README_PATH: ${{ vars.DOCS_README_PATH || 'docs/contents/document/README.md' }}
 
 jobs:
   intent:
@@ -213,8 +239,8 @@ jobs:
 
       - name: Configure git
         run: |
-          git config --global user.email "action@github.com"
-          git config --global user.name "GitHub Action"
+          git config --global user.email "${{ env.GIT_COMMIT_EMAIL }}"
+          git config --global user.name "${{ env.GIT_COMMIT_NAME }}"
 
       - name: Bump version with uv
         id: bump
@@ -251,9 +277,9 @@ jobs:
           DOCS_UPDATED=false
           
           # Update main CI/CD documentation if it exists
-          if [ -f "docs/contents/development/ci-cd.mdx" ]; then
+          if [ -f "${{ env.DOCS_CI_CD_PATH }}" ]; then
             # Update any version references in installation examples, if they exist
-            if grep -q "clickup-mcp-server" "docs/contents/development/ci-cd.mdx"; then
+            if grep -q "${{ env.PROJECT_NAME }}" "${{ env.DOCS_CI_CD_PATH }}"; then
               # This is just a placeholder - adjust pattern as needed for actual version references
               echo "Found version references in ci-cd.mdx to update"
               DOCS_UPDATED=true
@@ -261,21 +287,21 @@ jobs:
           fi
           
           # Update package installation docs if they exist
-          if [ -f "docs/contents/document/installation.md" ]; then
-            if grep -q "pip install.*clickup-mcp-server" "docs/contents/document/installation.md"; then
-              sed -i.bak "s/clickup-mcp-server==[0-9]\+\.[0-9]\+\.[0-9]\+/clickup-mcp-server==$NEW_VERSION/g" "docs/contents/document/installation.md"
-              rm -f "docs/contents/document/installation.md.bak" 2>/dev/null || true
+          if [ -f "${{ env.DOCS_INSTALLATION_PATH }}" ]; then
+            if grep -q "pip install.*${{ env.PROJECT_NAME }}" "${{ env.DOCS_INSTALLATION_PATH }}"; then
+              sed -i.bak "s/${{ env.PROJECT_NAME }}==[0-9]\+\.[0-9]\+\.[0-9]\+/${{ env.PROJECT_NAME }}==$NEW_VERSION/g" "${{ env.DOCS_INSTALLATION_PATH }}"
+              rm -f "${{ env.DOCS_INSTALLATION_PATH }}.bak" 2>/dev/null || true
               echo "Updated installation documentation with new version"
               DOCS_UPDATED=true
             fi
           fi
           
           # Update README if it has version references
-          if [ -f "docs/contents/document/README.md" ]; then
-            if grep -q "clickup-mcp-server" "docs/contents/document/README.md"; then
+          if [ -f "${{ env.DOCS_README_PATH }}" ]; then
+            if grep -q "${{ env.PROJECT_NAME }}" "${{ env.DOCS_README_PATH }}"; then
               # Update version references in README examples
-              sed -i.bak "s/clickup-mcp-server==[0-9]\+\.[0-9]\+\.[0-9]\+/clickup-mcp-server==$NEW_VERSION/g" "docs/contents/document/README.md"
-              rm -f "docs/contents/document/README.md.bak" 2>/dev/null || true
+              sed -i.bak "s/${{ env.PROJECT_NAME }}==[0-9]\+\.[0-9]\+\.[0-9]\+/${{ env.PROJECT_NAME }}==$NEW_VERSION/g" "${{ env.DOCS_README_PATH }}"
+              rm -f "${{ env.DOCS_README_PATH }}.bak" 2>/dev/null || true
               echo "Updated README documentation with new version"
               DOCS_UPDATED=true
             fi
@@ -288,13 +314,13 @@ jobs:
           # Add documentation files if they were updated
           if [ "$DOCS_UPDATED" = true ]; then
             # Add any updated documentation files
-            if [ -f "docs/contents/document/installation.md" ]; then
-              git add "docs/contents/document/installation.md"
-              FILES_TO_COMMIT="$FILES_TO_COMMIT docs/contents/document/installation.md"
+            if [ -f "${{ env.DOCS_INSTALLATION_PATH }}" ]; then
+              git add "${{ env.DOCS_INSTALLATION_PATH }}"
+              FILES_TO_COMMIT="$FILES_TO_COMMIT ${{ env.DOCS_INSTALLATION_PATH }}"
             fi
-            if [ -f "docs/contents/document/README.md" ]; then
-              git add "docs/contents/document/README.md"  
-              FILES_TO_COMMIT="$FILES_TO_COMMIT docs/contents/document/README.md"
+            if [ -f "${{ env.DOCS_README_PATH }}" ]; then
+              git add "${{ env.DOCS_README_PATH }}"  
+              FILES_TO_COMMIT="$FILES_TO_COMMIT ${{ env.DOCS_README_PATH }}"
             fi
             COMMIT_MESSAGE="⬆️ chore: bump version to $NEW_VERSION, sync uv.lock, and update docs"
             echo "Documentation files updated and will trigger documentation workflow"
@@ -362,11 +388,13 @@ jobs:
       registry-token: ${{ secrets.DOCKERHUB_TOKEN }}
     with:
       operation: 'push'
-      registry: 'docker.io'
+      registry: ${{ env.DOCKER_REGISTRY_DOCKERHUB }}
       version: ${{ needs.bump_version.outputs.version }}
       checkout-sha: ${{ needs.bump_version.outputs.new_sha }}
       enable-sbom: true
       enable-signing: true
+      app-env-var-name: ${{ env.APP_ENV_VAR_NAME }}
+      app-env-var-value: ${{ env.APP_ENV_VAR_VALUE }}
 
   release_docker_ghcr:
     name: Release to GHCR
@@ -375,11 +403,13 @@ jobs:
     if: needs.intent.outputs.do_release == 'true' && needs.intent.outputs.docker != 'skip'
     with:
       operation: 'push'
-      registry: 'ghcr.io'
+      registry: ${{ env.DOCKER_REGISTRY_GHCR }}
       version: ${{ needs.bump_version.outputs.version }}
       checkout-sha: ${{ needs.bump_version.outputs.new_sha }}
       enable-sbom: true
       enable-signing: true
+      app-env-var-name: ${{ env.APP_ENV_VAR_NAME }}
+      app-env-var-value: ${{ env.APP_ENV_VAR_VALUE }}
 
   release_docs:
     uses: Chisanan232/Template-Python-UV-Project/.github/workflows/rw_docs_operations.yaml@master

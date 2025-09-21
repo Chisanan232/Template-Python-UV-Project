@@ -22,6 +22,25 @@ concurrency:
   group: release-staging-${{ github.ref_name }}
   cancel-in-progress: false
 
+env:
+  # Project Configuration
+  PROJECT_NAME: ${{ vars.PROJECT_NAME || github.event.repository.name }}
+  BASE_BRANCH: ${{ vars.BASE_BRANCH || 'master' }}
+  PACKAGE_NAME: ${{ vars.PACKAGE_NAME || github.event.repository.name }}
+
+  # Docker Configuration
+  DOCKER_HEALTH_CHECK_PORT: ${{ vars.DOCKER_HEALTH_CHECK_PORT || '8000' }}
+  DOCKER_HEALTH_CHECK_PATH: ${{ vars.DOCKER_HEALTH_CHECK_PATH || '/health' }}
+  DOCKER_REGISTRY_DOCKERHUB: ${{ vars.DOCKER_REGISTRY_DOCKERHUB || 'docker.io' }}
+  DOCKER_REGISTRY_GHCR: ${{ vars.DOCKER_REGISTRY_GHCR || 'ghcr.io' }}
+
+  # Application Configuration
+  APP_ENV_VAR_NAME: ${{ vars.APP_ENV_VAR_NAME || 'API_TOKEN' }}
+  APP_ENV_VAR_VALUE: ${{ vars.APP_ENV_VAR_VALUE || 'your_token' }}
+
+  # Documentation Configuration
+  DOCS_PREVIEW_BRANCH: ${{ vars.DOCS_PREVIEW_BRANCH || 'docs-preview' }}
+
 jobs:
   compute-version:
     name: Compute Staging Version
@@ -100,13 +119,15 @@ jobs:
       registry-token: ${{ secrets.DOCKERHUB_TOKEN }}
     with:
       operation: 'push'
-      registry: 'docker.io'
+      registry: ${{ env.DOCKER_REGISTRY_DOCKERHUB }}
       version: ${{ needs.compute-version.outputs.rc_version }}
       checkout-sha: ${{ github.sha }}
       enable-sbom: true
       enable-signing: true
-      health-check-port: '8000'
-      health-check-path: '/health'
+      health-check-port: ${{ env.DOCKER_HEALTH_CHECK_PORT }}
+      health-check-path: ${{ env.DOCKER_HEALTH_CHECK_PATH }}
+      app-env-var-name: ${{ env.APP_ENV_VAR_NAME }}
+      app-env-var-value: ${{ env.APP_ENV_VAR_VALUE }}
 
   ghcr-rc:
     name: Staging Release to GHCR
@@ -114,13 +135,15 @@ jobs:
     needs: [compute-version, build_git-tag_and_create_github-release]
     with:
       operation: 'push'
-      registry: 'ghcr.io'
+      registry: ${{ env.DOCKER_REGISTRY_GHCR }}
       version: ${{ needs.compute-version.outputs.rc_version }}
       checkout-sha: ${{ github.sha }}
       enable-sbom: true
       enable-signing: true
-      health-check-port: '8000'
-      health-check-path: '/health'
+      health-check-port: ${{ env.DOCKER_HEALTH_CHECK_PORT }}
+      health-check-path: ${{ env.DOCKER_HEALTH_CHECK_PATH }}
+      app-env-var-name: ${{ env.APP_ENV_VAR_NAME }}
+      app-env-var-value: ${{ env.APP_ENV_VAR_VALUE }}
 
   docs-preview:
     uses: Chisanan232/Template-Python-UV-Project/.github/workflows/rw_docs_operations.yaml@master
@@ -129,7 +152,7 @@ jobs:
       operation: 'deploy-preview'
       version: ${{ needs.compute-version.outputs.rc_version }}
       checkout-sha: ${{ github.sha }}
-      preview-branch: 'docs-preview'
+      preview-branch: ${{ env.DOCS_PREVIEW_BRANCH }}
       upload-artifacts: true
 
   staging-summary:
@@ -150,7 +173,7 @@ jobs:
           echo "📦 Staging Artifacts:"
           echo "- Base Version: ${{ needs.compute-version.outputs.version }}"
           echo "- RC Version: ${{ needs.compute-version.outputs.rc_version }}"
-          echo "- TestPyPI: https://test.pypi.org/project/clickup-mcp-server/${{ needs.compute-version.outputs.version }}/"
+          echo "- TestPyPI: https://test.pypi.org/project/${{ env.PROJECT_NAME }}/${{ needs.compute-version.outputs.version }}/"
           echo "- GHCR RC Image: ghcr.io/${{ github.repository }}:${{ needs.compute-version.outputs.rc_version }}"
           echo "- Docs Preview: docs-preview branch"
           echo ""
@@ -163,10 +186,10 @@ jobs:
             echo ""
             echo "🧪 Testing Instructions:"
             echo "1. Install from TestPyPI:"
-            echo "   pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ clickup-mcp-server==${{ needs.compute-version.outputs.version }}"
+            echo "   pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ ${{ env.PROJECT_NAME }}==${{ needs.compute-version.outputs.version }}"
             echo ""
             echo "2. Test RC Docker image:"
-            echo "   docker run -p 8000:8000 -e CLICKUP_API_TOKEN=your_token ghcr.io/${{ github.repository }}:${{ needs.compute-version.outputs.rc_version }}"
+            echo "   docker run -p ${{ env.DOCKER_HEALTH_CHECK_PORT }}:${{ env.DOCKER_HEALTH_CHECK_PORT }} -e ${{ env.APP_ENV_VAR_NAME }}=${{ env.APP_ENV_VAR_VALUE }} ghcr.io/${{ github.repository }}:${{ needs.compute-version.outputs.rc_version }}"
             echo ""
             echo "3. Review documentation preview in docs-preview branch"
             echo ""
