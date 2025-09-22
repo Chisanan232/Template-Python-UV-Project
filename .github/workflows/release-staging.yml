@@ -22,29 +22,16 @@ concurrency:
   group: release-staging-${{ github.ref_name }}
   cancel-in-progress: false
 
-env:
-  # Project Configuration
-  PROJECT_NAME: ${{ vars.PROJECT_NAME || github.event.repository.name }}
-  BASE_BRANCH: ${{ vars.BASE_BRANCH || 'master' }}
-  PACKAGE_NAME: ${{ vars.PACKAGE_NAME || github.event.repository.name }}
-
-  # Docker Configuration
-  DOCKER_HEALTH_CHECK_PORT: ${{ vars.DOCKER_HEALTH_CHECK_PORT || '8000' }}
-  DOCKER_HEALTH_CHECK_PATH: ${{ vars.DOCKER_HEALTH_CHECK_PATH || '/health' }}
-  DOCKER_REGISTRY_DOCKERHUB: ${{ vars.DOCKER_REGISTRY_DOCKERHUB || 'docker.io' }}
-  DOCKER_REGISTRY_GHCR: ${{ vars.DOCKER_REGISTRY_GHCR || 'ghcr.io' }}
-
-  # Application Configuration
-  APP_ENV_VAR_NAME: ${{ vars.APP_ENV_VAR_NAME || 'API_TOKEN' }}
-  APP_ENV_VAR_VALUE: ${{ vars.APP_ENV_VAR_VALUE || 'your_token' }}
-
-  # Documentation Configuration
-  DOCS_PREVIEW_BRANCH: ${{ vars.DOCS_PREVIEW_BRANCH || 'docs-preview' }}
-
 jobs:
+  # Parse project configuration from intent.yaml
+  config:
+    name: Parse Configuration
+    uses: ./.github/workflows/rw_parse_project_config.yaml
+
   compute-version:
     name: Compute Staging Version
     runs-on: ubuntu-latest
+    needs: config
     outputs:
       version: ${{ steps.version.outputs.version }}
       rc_version: ${{ steps.version.outputs.rc_version }}
@@ -93,7 +80,7 @@ jobs:
 
   build_git-tag_and_create_github-release:
     uses: Chisanan232/Template-Python-UV-Project/.github/workflows/rw_build_git-tag_and_create_github-release_v2.yaml@master
-    needs: compute-version
+    needs: [config, compute-version]
     with:
       version: ${{ needs.compute-version.outputs.rc_version }}
       checkout-sha: ${{ github.sha }}
@@ -103,7 +90,7 @@ jobs:
 
   pypi-test:
     uses: ./.github/workflows/rw_python_package.yaml
-    needs: [compute-version, build_git-tag_and_create_github-release]
+    needs: [config, compute-version, build_git-tag_and_create_github-release]
     with:
       operation: 'publish-testpypi'
       version: ${{ needs.compute-version.outputs.version }}
@@ -113,52 +100,52 @@ jobs:
   dockerhub-rc:
     name: Staging Release to DockerHub
     uses: Chisanan232/Template-Python-UV-Project/.github/workflows/rw_docker_operations.yaml@master
-    needs: [compute-version, build_git-tag_and_create_github-release]
+    needs: [config, compute-version, build_git-tag_and_create_github-release]
     secrets:
       dockerhub-user: ${{ secrets.DOCKERHUB_USERNAME }}
       registry-token: ${{ secrets.DOCKERHUB_TOKEN }}
     with:
       operation: 'push'
-      registry: ${{ env.DOCKER_REGISTRY_DOCKERHUB }}
+      registry: ${{ needs.config.outputs.docker_registry_dockerhub }}
       version: ${{ needs.compute-version.outputs.rc_version }}
       checkout-sha: ${{ github.sha }}
       enable-sbom: true
       enable-signing: true
-      health-check-port: ${{ env.DOCKER_HEALTH_CHECK_PORT }}
-      health-check-path: ${{ env.DOCKER_HEALTH_CHECK_PATH }}
-      app-env-var-name: ${{ env.APP_ENV_VAR_NAME }}
-      app-env-var-value: ${{ env.APP_ENV_VAR_VALUE }}
+      health-check-port: ${{ needs.config.outputs.docker_health_check_port }}
+      health-check-path: ${{ needs.config.outputs.docker_health_check_path }}
+      app-env-var-name: ${{ needs.config.outputs.docker_app_env_var_name }}
+      app-env-var-value: ${{ needs.config.outputs.docker_app_env_var_value }}
 
   ghcr-rc:
     name: Staging Release to GHCR
     uses: Chisanan232/Template-Python-UV-Project/.github/workflows/rw_docker_operations.yaml@master
-    needs: [compute-version, build_git-tag_and_create_github-release]
+    needs: [config, compute-version, build_git-tag_and_create_github-release]
     with:
       operation: 'push'
-      registry: ${{ env.DOCKER_REGISTRY_GHCR }}
+      registry: ${{ needs.config.outputs.docker_registry_ghcr }}
       version: ${{ needs.compute-version.outputs.rc_version }}
       checkout-sha: ${{ github.sha }}
       enable-sbom: true
       enable-signing: true
-      health-check-port: ${{ env.DOCKER_HEALTH_CHECK_PORT }}
-      health-check-path: ${{ env.DOCKER_HEALTH_CHECK_PATH }}
-      app-env-var-name: ${{ env.APP_ENV_VAR_NAME }}
-      app-env-var-value: ${{ env.APP_ENV_VAR_VALUE }}
+      health-check-port: ${{ needs.config.outputs.docker_health_check_port }}
+      health-check-path: ${{ needs.config.outputs.docker_health_check_path }}
+      app-env-var-name: ${{ needs.config.outputs.docker_app_env_var_name }}
+      app-env-var-value: ${{ needs.config.outputs.docker_app_env_var_value }}
 
   docs-preview:
     uses: Chisanan232/Template-Python-UV-Project/.github/workflows/rw_docs_operations.yaml@master
-    needs: compute-version
+    needs: [config, compute-version]
     with:
       operation: 'deploy-preview'
       version: ${{ needs.compute-version.outputs.rc_version }}
       checkout-sha: ${{ github.sha }}
-      preview-branch: ${{ env.DOCS_PREVIEW_BRANCH }}
+      preview-branch: ${{ needs.config.outputs.docs_preview_branch }}
       upload-artifacts: true
 
   staging-summary:
     name: Staging Release Summary
     runs-on: ubuntu-latest
-    needs: [compute-version, pypi-test, ghcr-rc, docs-preview]
+    needs: [config, compute-version, pypi-test, ghcr-rc, docs-preview]
     if: always()
     steps:
       - name: Generate staging release summary
@@ -173,7 +160,7 @@ jobs:
           echo "📦 Staging Artifacts:"
           echo "- Base Version: ${{ needs.compute-version.outputs.version }}"
           echo "- RC Version: ${{ needs.compute-version.outputs.rc_version }}"
-          echo "- TestPyPI: https://test.pypi.org/project/${{ env.PROJECT_NAME }}/${{ needs.compute-version.outputs.version }}/"
+          echo "- TestPyPI: https://test.pypi.org/project/${{ needs.config.outputs.project_name }}/${{ needs.compute-version.outputs.version }}/"
           echo "- GHCR RC Image: ghcr.io/${{ github.repository }}:${{ needs.compute-version.outputs.rc_version }}"
           echo "- Docs Preview: docs-preview branch"
           echo ""
@@ -186,10 +173,10 @@ jobs:
             echo ""
             echo "🧪 Testing Instructions:"
             echo "1. Install from TestPyPI:"
-            echo "   pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ ${{ env.PROJECT_NAME }}==${{ needs.compute-version.outputs.version }}"
+            echo "   pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ ${{ needs.config.outputs.project_name }}==${{ needs.compute-version.outputs.version }}"
             echo ""
             echo "2. Test RC Docker image:"
-            echo "   docker run -p ${{ env.DOCKER_HEALTH_CHECK_PORT }}:${{ env.DOCKER_HEALTH_CHECK_PORT }} -e ${{ env.APP_ENV_VAR_NAME }}=${{ env.APP_ENV_VAR_VALUE }} ghcr.io/${{ github.repository }}:${{ needs.compute-version.outputs.rc_version }}"
+            echo "   docker run -p ${{ needs.config.outputs.docker_health_check_port }}:${{ needs.config.outputs.docker_health_check_port }} -e ${{ needs.config.outputs.docker_app_env_var_name }}=${{ needs.config.outputs.docker_app_env_var_value }} ghcr.io/${{ github.repository }}:${{ needs.compute-version.outputs.rc_version }}"
             echo ""
             echo "3. Review documentation preview in docs-preview branch"
             echo ""

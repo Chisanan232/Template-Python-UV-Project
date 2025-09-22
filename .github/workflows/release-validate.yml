@@ -35,48 +35,34 @@ concurrency:
   group: release-validate-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  # Project Configuration
-  PROJECT_NAME: ${{ vars.PROJECT_NAME || github.event.repository.name }}
-  BASE_BRANCH: ${{ vars.BASE_BRANCH || 'master' }}
-  PACKAGE_NAME: ${{ vars.PACKAGE_NAME || github.event.repository.name }}
-
-  # Docker Configuration
-  DOCKER_HEALTH_CHECK_PORT: ${{ vars.DOCKER_HEALTH_CHECK_PORT || '8000' }}
-  DOCKER_HEALTH_CHECK_PATH: ${{ vars.DOCKER_HEALTH_CHECK_PATH || '/health' }}
-  DOCKER_REGISTRY_DOCKERHUB: ${{ vars.DOCKER_REGISTRY_DOCKERHUB || 'docker.io' }}
-  DOCKER_REGISTRY_GHCR: ${{ vars.DOCKER_REGISTRY_GHCR || 'ghcr.io' }}
-
-  # Application Configuration
-  APP_ENV_VAR_NAME: ${{ vars.APP_ENV_VAR_NAME || 'API_TOKEN' }}
-  APP_ENV_VAR_VALUE: ${{ vars.APP_ENV_VAR_VALUE || 'test_token' }}
-
-  # Validation Configuration
-  VALIDATION_VERSION: ${{ vars.VALIDATION_VERSION || '1.0.0-validation' }}
-  VALIDATION_TEST_VERSION: ${{ vars.VALIDATION_TEST_VERSION || 'validation-test' }}
-
 jobs:
+  # Parse project configuration from intent.yaml
+  config:
+    name: Parse Configuration
+    uses: ./.github/workflows/rw_parse_project_config.yaml
+
   intent-parse:
     uses: Chisanan232/Template-Python-UV-Project/.github/workflows/rw_parse_release_intent.yaml@master
+    needs: config
     with:
-      level: ${{ inputs.level || 'auto' }}
-      python: 'auto'
-      docker: 'auto'
-      docs: 'auto'
+      level: ${{ inputs.level || needs.config.outputs.level }}
+      python: ${{ needs.config.outputs.python }}
+      docker: ${{ needs.config.outputs.docker }}
+      docs: ${{ needs.config.outputs.docs }}
       notes: 'Validation test run'
 
   build_git-tag_and_create_github-release:
     uses: Chisanan232/Template-Python-UV-Project/.github/workflows/rw_build_git-tag_and_create_github-release_v2.yaml@master
-    needs: intent-parse
+    needs: [config, intent-parse]
     with:
-      version: ${{ env.VALIDATION_VERSION }}  # Test version for validation
+      version: ${{ needs.config.outputs.validation_version }}  # Test version for validation
       debug_mode: true
     secrets:
       github_auth_token: ${{ secrets.GITHUB_TOKEN }}
 
   python-build-check:
     uses: ./.github/workflows/rw_python_package.yaml
-    needs: build_git-tag_and_create_github-release
+    needs: [config, build_git-tag_and_create_github-release]
     with:
       operation: 'test'
       artifact-name: 'validation-python-package'
@@ -84,36 +70,36 @@ jobs:
   docker-build-dockerhub:
     name: Validate DockerHub Build
     uses: Chisanan232/Template-Python-UV-Project/.github/workflows/rw_docker_operations.yaml@master
-    needs: build_git-tag_and_create_github-release
+    needs: [config, build_git-tag_and_create_github-release]
     with:
       operation: 'test'
-      registry: ${{ env.DOCKER_REGISTRY_DOCKERHUB }}
+      registry: ${{ needs.config.outputs.docker_registry_dockerhub }}
       image-name: ${{ github.repository }}
-      version: ${{ env.VALIDATION_TEST_VERSION }}
-      health-check-port: ${{ env.DOCKER_HEALTH_CHECK_PORT }}
-      health-check-path: ${{ env.DOCKER_HEALTH_CHECK_PATH }}
+      version: ${{ needs.config.outputs.validation_test_version }}
+      health-check-port: ${{ needs.config.outputs.docker_health_check_port }}
+      health-check-path: ${{ needs.config.outputs.docker_health_check_path }}
       enable-signing: true
-      app-env-var-name: ${{ env.APP_ENV_VAR_NAME }}
-      app-env-var-value: ${{ env.APP_ENV_VAR_VALUE }}
+      app-env-var-name: ${{ needs.config.outputs.docker_app_env_var_name }}
+      app-env-var-value: ${{ needs.config.outputs.docker_app_env_var_value }}
 
   docker-build-ghcr:
     name: Validate GHCR Build
     uses: Chisanan232/Template-Python-UV-Project/.github/workflows/rw_docker_operations.yaml@master
-    needs: build_git-tag_and_create_github-release
+    needs: [config, build_git-tag_and_create_github-release]
     with:
       operation: 'test'
-      registry: ${{ env.DOCKER_REGISTRY_GHCR }}
+      registry: ${{ needs.config.outputs.docker_registry_ghcr }}
       image-name: ${{ github.repository }}
-      version: ${{ env.VALIDATION_TEST_VERSION }}
-      health-check-port: ${{ env.DOCKER_HEALTH_CHECK_PORT }}
-      health-check-path: ${{ env.DOCKER_HEALTH_CHECK_PATH }}
+      version: ${{ needs.config.outputs.validation_test_version }}
+      health-check-port: ${{ needs.config.outputs.docker_health_check_port }}
+      health-check-path: ${{ needs.config.outputs.docker_health_check_path }}
       enable-signing: true
-      app-env-var-name: ${{ env.APP_ENV_VAR_NAME }}
-      app-env-var-value: ${{ env.APP_ENV_VAR_VALUE }}
+      app-env-var-name: ${{ needs.config.outputs.docker_app_env_var_name }}
+      app-env-var-value: ${{ needs.config.outputs.docker_app_env_var_value }}
 
   docs-build:
     uses: Chisanan232/Template-Python-UV-Project/.github/workflows/rw_docs_operations.yaml@master
-    needs: intent-parse
+    needs: [config, intent-parse]
     with:
       operation: 'test'
       upload-artifacts: true
@@ -121,21 +107,21 @@ jobs:
   supply-chain-loopback:
     name: Security Scan (Supply Chain)
     uses: Chisanan232/Template-Python-UV-Project/.github/workflows/rw_docker_operations.yaml@master
-    needs: [docker-build-dockerhub, docker-build-ghcr]
+    needs: [config, docker-build-dockerhub, docker-build-ghcr]
     with:
       operation: 'security-scan'
-      registry: ${{ env.DOCKER_REGISTRY_DOCKERHUB }}  # Use DockerHub build for security scan
+      registry: ${{ needs.config.outputs.docker_registry_dockerhub }}  # Use DockerHub build for security scan
       image-name: ${{ github.repository }}
-      version: ${{ env.VALIDATION_TEST_VERSION }}
+      version: ${{ needs.config.outputs.validation_test_version }}
       enable-sbom: true
       enable-signing: true
-      app-env-var-name: ${{ env.APP_ENV_VAR_NAME }}
-      app-env-var-value: ${{ env.APP_ENV_VAR_VALUE }}
+      app-env-var-name: ${{ needs.config.outputs.docker_app_env_var_name }}
+      app-env-var-value: ${{ needs.config.outputs.docker_app_env_var_value }}
 
   validation-summary:
     name: Validation Summary
     runs-on: ubuntu-latest
-    needs: [intent-parse, python-build-check, docker-build-dockerhub, docker-build-ghcr, docs-build, supply-chain-loopback]
+    needs: [config, intent-parse, python-build-check, docker-build-dockerhub, docker-build-ghcr, docs-build, supply-chain-loopback]
     if: always()
     steps:
       - name: Check validation results
