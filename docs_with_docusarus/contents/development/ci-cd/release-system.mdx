@@ -960,9 +960,7 @@ docker:
   health_check:
     path: "/health"              # string - Health check endpoint
     port: 8000                   # number - Health check port
-  application:
-    env_var_name: "API_TOKEN"    # string - Application environment variable name
-    env_var_value: "test_token"  # string - Application environment variable value
+  run_options: "-e API_TOKEN=test_token -e DEBUG=true -v /host/data:/app/data --network mynetwork"
 ```
 
 **Configuration Options:**
@@ -970,8 +968,26 @@ docker:
 - **`registries.ghcr`**: GitHub Container Registry URL for dual publishing
 - **`health_check.path`**: HTTP health check endpoint path
 - **`health_check.port`**: Port for health check operations
-- **`application.env_var_name`**: Environment variable name for application testing
-- **`application.env_var_value`**: Environment variable value for application testing
+- **`run_options`**: Flexible string for Docker run options (environment variables, volumes, networks, etc.)
+
+**Advanced Docker Run Options Examples:**
+```yaml
+# Basic environment variables
+docker:
+  run_options: "-e API_TOKEN=test_token -e DEBUG=true"
+
+# Multiple environment variables with volumes
+docker:
+  run_options: "-e API_TOKEN=test_token -e DB_URL=postgresql://localhost:5432/app -v /host/data:/app/data -v /host/logs:/app/logs"
+
+# Complex configuration with network and resource limits
+docker:
+  run_options: "-e API_TOKEN=test_token -e REDIS_URL=redis://localhost:6379 --network mynetwork --memory=512m --cpus=0.5 -v /host/config:/app/config:ro"
+
+# Production-ready configuration
+docker:
+  run_options: "-e NODE_ENV=production -e API_TOKEN=prod_token -e DB_URL=postgresql://prod-db:5432/app -e REDIS_URL=redis://prod-redis:6379 --network prod-network --restart unless-stopped -v /data/app:/app/data -v /logs/app:/app/logs"
+```
 
 **Usage in Workflows:**
 ```yaml
@@ -980,14 +996,32 @@ DOCKERHUB_REGISTRY: ${{ needs.config.outputs.docker_registry_dockerhub }}
 GHCR_REGISTRY: ${{ needs.config.outputs.docker_registry_ghcr }}
 HEALTH_CHECK_PATH: ${{ needs.config.outputs.docker_health_check_path }}
 HEALTH_CHECK_PORT: ${{ needs.config.outputs.docker_health_check_port }}
-APP_ENV_NAME: ${{ needs.config.outputs.docker_app_env_name }}
-APP_ENV_VALUE: ${{ needs.config.outputs.docker_app_env_value }}
+DOCKER_RUN_OPTIONS: ${{ needs.config.outputs.docker_run_options }}
+
+# Example: Using the flexible Docker run options in workflows
+jobs:
+  docker-operations:
+    uses: Chisanan232/Template-Python-UV-Project/.github/workflows/rw_docker_operations.yaml@master
+    needs: config
+    with:
+      operation: 'push'
+      registry: ${{ needs.config.outputs.docker_registry_dockerhub }}
+      version: '1.0.0'
+      docker-run-options: ${{ needs.config.outputs.docker_run_options }}
 
 # Example: Health check validation
 - name: Test Health Check
   run: |
     curl -f "http://localhost:${{ needs.config.outputs.docker_health_check_port }}${{ needs.config.outputs.docker_health_check_path }}"
 ```
+
+**Benefits of Flexible Docker Run Options:**
+- **Multiple Environment Variables**: Pass any number of environment variables in a single string
+- **Volume Mounts**: Configure data persistence and file sharing between host and container
+- **Network Configuration**: Specify custom Docker networks for container connectivity
+- **Resource Limits**: Set memory and CPU constraints for container resource management
+- **Runtime Options**: Configure restart policies, security contexts, and other Docker runtime settings
+- **Child Project Flexibility**: Each project using the template can customize Docker behavior without modifying workflows
 
 ##### 9. Validation Configuration
 

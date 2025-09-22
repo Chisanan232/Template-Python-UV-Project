@@ -124,8 +124,7 @@ jobs:
       docker_registry_ghcr: ${{ steps.parse.outputs.docker_registry_ghcr }}
       docker_health_check_port: ${{ steps.parse.outputs.docker_health_check_port }}
       docker_health_check_path: ${{ steps.parse.outputs.docker_health_check_path }}
-      docker_app_env_var_name: ${{ steps.parse.outputs.docker_app_env_var_name }}
-      docker_app_env_var_value: ${{ steps.parse.outputs.docker_app_env_var_value }}
+      docker_run_options: ${{ steps.parse.outputs.docker_run_options }}
       
       # Validation Configuration
       validation_version: ${{ steps.parse.outputs.validation_version }}
@@ -204,8 +203,20 @@ jobs:
           docker_registry_ghcr=$(get_config ".docker.registries.ghcr" "ghcr.io")
           docker_health_check_port=$(get_config ".docker.health_check.port" "8000")
           docker_health_check_path=$(get_config ".docker.health_check.path" "/health")
-          docker_app_env_var_name=$(get_config ".docker.application.env_var_name" "API_TOKEN")
-          docker_app_env_var_value=$(get_config ".docker.application.env_var_value" "test_token")
+          
+          # Parse flexible Docker run options
+          docker_run_options=$(get_config ".docker.run_options" "-e API_TOKEN=test_token")
+          
+          # Legacy support: If run_options is not set but old env var settings exist, build compatibility string
+          if [[ "$docker_run_options" == "-e API_TOKEN=test_token" ]] && [[ "$use_defaults" == "false" ]]; then
+            legacy_env_name=$(yq eval ".docker.application.env_var_name" "$config_file" 2>/dev/null || echo "null")
+            legacy_env_value=$(yq eval ".docker.application.env_var_value" "$config_file" 2>/dev/null || echo "null")
+            
+            if [[ "$legacy_env_name" != "null" && "$legacy_env_value" != "null" ]]; then
+              docker_run_options="-e ${legacy_env_name}=${legacy_env_value}"
+              echo "⚠️ Using legacy docker.application.env_var_* format. Consider migrating to docker.run_options."
+            fi
+          fi
           
           # Parse Validation Configuration
           validation_version=$(get_config ".validation.version" "1.0.0-validation")
@@ -237,8 +248,7 @@ jobs:
           echo "docker_registry_ghcr=$docker_registry_ghcr" >> $GITHUB_OUTPUT
           echo "docker_health_check_port=$docker_health_check_port" >> $GITHUB_OUTPUT
           echo "docker_health_check_path=$docker_health_check_path" >> $GITHUB_OUTPUT
-          echo "docker_app_env_var_name=$docker_app_env_var_name" >> $GITHUB_OUTPUT
-          echo "docker_app_env_var_value=$docker_app_env_var_value" >> $GITHUB_OUTPUT
+          echo "docker_run_options=$docker_run_options" >> $GITHUB_OUTPUT
           
           echo "validation_version=$validation_version" >> $GITHUB_OUTPUT
           echo "validation_test_version=$validation_test_version" >> $GITHUB_OUTPUT

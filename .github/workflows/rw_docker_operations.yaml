@@ -58,15 +58,10 @@ on:
         required: false
         default: ''
         type: string
-      app-env-var-name:
-        description: 'Application environment variable name for testing'
+      docker-run-options:
+        description: 'Additional Docker run options (environment variables, volumes, networks, etc.)'
         required: false
-        default: 'API_TOKEN'
-        type: string
-      app-env-var-value:
-        description: 'Application environment variable value for testing'
-        required: false
-        default: 'test_token'
+        default: '-e API_TOKEN=test_token'
         type: string
 
     secrets:
@@ -187,7 +182,7 @@ jobs:
           # Start container in background
           docker run -d --name test-container \
             -p ${{ inputs.health-check-port }}:${{ inputs.health-check-port }} \
-            -e ${{ inputs.app-env-var-name }}=${{ inputs.app-env-var-value }} \
+            ${{ inputs.docker-run-options }} \
             $IMAGE_TAG
           
           # Wait for container to be ready and test health endpoint
