@@ -26,7 +26,7 @@ jobs:
   # Parse project configuration from intent.yaml
   config:
     name: Parse Configuration
-    uses: ./.github/workflows/rw_parse_project_config.yaml
+    uses: Chisanan232/Template-Python-UV-Project/.github/workflows/rw_parse_project_config.yaml@master
 
   compute-version:
     name: Compute Staging Version

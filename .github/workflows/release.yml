@@ -60,7 +60,7 @@ jobs:
   # Parse project configuration from intent.yaml
   config:
     name: Parse Configuration
-    uses: ./.github/workflows/rw_parse_project_config.yaml
+    uses: Chisanan232/Template-Python-UV-Project/.github/workflows/rw_parse_project_config.yaml@master
 
   intent:
     uses: Chisanan232/Template-Python-UV-Project/.github/workflows/rw_parse_release_intent.yaml@master
