@@ -1,0 +1,174 @@
+# Centralized Complete Release Validation Workflow
+# This reusable workflow contains all the logic for the release validation process
+name: Complete Release Validation Process
+
+on:
+  workflow_call:
+    inputs:
+      level:
+        description: 'Release level to test (auto, patch, minor, major)'
+        required: false
+        default: 'auto'
+        type: string
+      python:
+        description: 'Python package validation (auto, force, skip)'
+        required: false
+        default: 'auto'
+        type: string
+      docker:
+        description: 'Docker image validation (auto, force, skip)'
+        required: false
+        default: 'auto'
+        type: string
+      docs:
+        description: 'Documentation validation (auto, force, skip)'
+        required: false
+        default: 'auto'
+        type: string
+    outputs:
+      validation_passed:
+        description: 'Whether all validation checks passed'
+        value: ${{ jobs.validation-summary.outputs.success }}
+      intent_parsed:
+        description: 'Release intent parsing result'
+        value: ${{ jobs.intent-parse.result }}
+      python_validated:
+        description: 'Python package validation result'
+        value: ${{ jobs.python-build-check.result }}
+      docker_validated:
+        description: 'Docker validation result'
+        value: ${{ jobs.docker-build-dockerhub.result == 'success' && jobs.docker-build-ghcr.result == 'success' }}
+      docs_validated:
+        description: 'Documentation validation result'
+        value: ${{ jobs.docs-build.result }}
+      security_validated:
+        description: 'Security validation result'
+        value: ${{ jobs.supply-chain-loopback.result }}
+
+permissions:
+  contents: read
+  packages: read
+  id-token: write  # For cosign keyless signing
+
+jobs:
+  # Parse project configuration from intent.yaml
+  config:
+    name: Parse Configuration
+    uses: Chisanan232/Template-Python-UV-Project/.github/workflows/rw_parse_project_config.yaml@master
+
+  intent-parse:
+    uses: Chisanan232/Template-Python-UV-Project/.github/workflows/rw_parse_release_intent.yaml@master
+    needs: config
+    with:
+      level: ${{ inputs.level || needs.config.outputs.level }}
+      python: ${{ inputs.python || needs.config.outputs.python }}
+      docker: ${{ inputs.docker || needs.config.outputs.docker }}
+      docs: ${{ inputs.docs || needs.config.outputs.docs }}
+      notes: 'Validation test run'
+
+  build_git-tag_and_create_github-release:
+    uses: Chisanan232/Template-Python-UV-Project/.github/workflows/rw_build_git-tag_and_create_github-release_v2.yaml@master
+    needs: [config, intent-parse]
+    with:
+      version: ${{ needs.config.outputs.validation_version }}  # Test version for validation
+      debug_mode: true
+    secrets:
+      github_auth_token: ${{ secrets.GITHUB_TOKEN }}
+
+  python-build-check:
+    uses: Chisanan232/Template-Python-UV-Project/.github/workflows/rw_python_package.yaml@master
+    needs: [config, build_git-tag_and_create_github-release]
+    with:
+      operation: 'test'
+      artifact-name: 'validation-python-package'
+
+  docker-build-dockerhub:
+    name: Validate DockerHub Build
+    uses: Chisanan232/Template-Python-UV-Project/.github/workflows/rw_docker_operations.yaml@master
+    needs: [config, build_git-tag_and_create_github-release]
+    with:
+      operation: 'test'
+      registry: ${{ needs.config.outputs.docker_registry_dockerhub }}
+      image-name: ${{ github.repository }}
+      version: ${{ needs.config.outputs.validation_test_version }}
+      health-check-port: ${{ needs.config.outputs.docker_health_check_port }}
+      health-check-path: ${{ needs.config.outputs.docker_health_check_path }}
+      enable-signing: true
+      docker-run-options: ${{ needs.config.outputs.docker_run_options }}
+
+  docker-build-ghcr:
+    name: Validate GHCR Build
+    uses: Chisanan232/Template-Python-UV-Project/.github/workflows/rw_docker_operations.yaml@master
+    needs: [config, build_git-tag_and_create_github-release]
+    with:
+      operation: 'test'
+      registry: ${{ needs.config.outputs.docker_registry_ghcr }}
+      image-name: ${{ github.repository }}
+      version: ${{ needs.config.outputs.validation_test_version }}
+      health-check-port: ${{ needs.config.outputs.docker_health_check_port }}
+      health-check-path: ${{ needs.config.outputs.docker_health_check_path }}
+      enable-signing: true
+      docker-run-options: ${{ needs.config.outputs.docker_run_options }}
+
+  docs-build:
+    uses: Chisanan232/Template-Python-UV-Project/.github/workflows/rw_docs_operations.yaml@master
+    needs: [config, intent-parse]
+    with:
+      operation: 'test'
+      upload-artifacts: true
+
+  supply-chain-loopback:
+    name: Security Scan (Supply Chain)
+    uses: Chisanan232/Template-Python-UV-Project/.github/workflows/rw_docker_operations.yaml@master
+    needs: [config, docker-build-dockerhub, docker-build-ghcr]
+    with:
+      operation: 'security-scan'
+      registry: ${{ needs.config.outputs.docker_registry_dockerhub }}  # Use DockerHub build for security scan
+      image-name: ${{ github.repository }}
+      version: ${{ needs.config.outputs.validation_test_version }}
+      enable-sbom: true
+      enable-signing: true
+      docker-run-options: ${{ needs.config.outputs.docker_run_options }}
+
+  validation-summary:
+    name: Validation Summary
+    runs-on: ubuntu-latest
+    needs: [config, intent-parse, python-build-check, docker-build-dockerhub, docker-build-ghcr, docs-build, supply-chain-loopback]
+    if: always()
+    outputs:
+      success: ${{ steps.summary.outputs.success }}
+    steps:
+      - name: Check validation results
+        id: summary
+        run: |
+          echo "=== Release Validation Summary ==="
+          echo ""
+          echo "Intent Parsing: ${{ needs.intent-parse.result }}"
+          echo "Python Build: ${{ needs.python-build-check.result }}"
+          echo "DockerHub Build: ${{ needs.docker-build-dockerhub.result }}"
+          echo "GHCR Build: ${{ needs.docker-build-ghcr.result }}"
+          echo "Docs Build: ${{ needs.docs-build.result }}"
+          echo "Supply Chain: ${{ needs.supply-chain-loopback.result }}"
+          echo ""
+          
+          if [[ "${{ needs.intent-parse.result }}" == "success" && \
+                "${{ needs.python-build-check.result }}" == "success" && \
+                "${{ needs.docker-build-dockerhub.result }}" == "success" && \
+                "${{ needs.docker-build-ghcr.result }}" == "success" && \
+                "${{ needs.docs-build.result }}" == "success" && \
+                "${{ needs.supply-chain-loopback.result }}" == "success" ]]; then
+            echo "✅ All validation checks passed! Release process is ready."
+            echo "success=true" >> $GITHUB_OUTPUT
+            echo ""
+            echo "Release Configuration:"
+            echo "- Do Release: ${{ needs.intent-parse.outputs.do_release }}"
+            echo "- Level: ${{ needs.intent-parse.outputs.level }}"
+            echo "- Python: ${{ needs.intent-parse.outputs.python }}"
+            echo "- Docker: ${{ needs.intent-parse.outputs.docker }}"
+            echo "- Docs: ${{ needs.intent-parse.outputs.docs }}"
+            echo "- Notes: ${{ needs.intent-parse.outputs.notes }}"
+          else
+            echo "❌ Some validation checks failed. Please review the logs above."
+            echo "success=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
