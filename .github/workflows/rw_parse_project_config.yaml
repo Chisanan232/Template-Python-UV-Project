@@ -67,12 +67,9 @@ on:
       docker_health_check_path:
         description: 'Docker health check path'
         value: ${{ jobs.parse-config.outputs.docker_health_check_path }}
-      docker_app_env_var_name:
-        description: 'Docker application environment variable name'
-        value: ${{ jobs.parse-config.outputs.docker_app_env_var_name }}
-      docker_app_env_var_value:
-        description: 'Docker application environment variable value'
-        value: ${{ jobs.parse-config.outputs.docker_app_env_var_value }}
+      docker_run_options:
+        description: 'Docker run options string for flexible container configuration'
+        value: ${{ jobs.parse-config.outputs.docker_run_options }}
       
       # Validation Configuration
       validation_version:
@@ -206,7 +203,18 @@ jobs:
           
           # Parse flexible Docker run options
           docker_run_options=$(get_config ".docker.run_options" "-e API_TOKEN=test_token")
-          
+
+          # Legacy support: If run_options is not set but old env var settings exist, build compatibility string
+          if [[ "$docker_run_options" == "-e API_TOKEN=test_token" ]] && [[ "$use_defaults" == "false" ]]; then
+            legacy_env_name=$(yq eval ".docker.application.env_var_name" "$config_file" 2>/dev/null || echo "null")
+            legacy_env_value=$(yq eval ".docker.application.env_var_value" "$config_file" 2>/dev/null || echo "null")
+
+            if [[ "$legacy_env_name" != "null" && "$legacy_env_value" != "null" ]]; then
+              docker_run_options="-e ${legacy_env_name}=${legacy_env_value}"
+              echo "⚠️ Using legacy docker.application.env_var_* format. Consider migrating to docker.run_options."
+            fi
+          fi
+
           # Parse Validation Configuration
           validation_version=$(get_config ".validation.version" "1.0.0-validation")
           validation_test_version=$(get_config ".validation.test_version" "validation-test")
@@ -275,8 +283,7 @@ jobs:
           echo "  - GHCR: $docker_registry_ghcr"
           echo "  - Health Port: $docker_health_check_port"
           echo "  - Health Path: $docker_health_check_path"
-          echo "  - App Env Name: $docker_app_env_var_name"
-          echo "  - App Env Value: $docker_app_env_var_value"
+          echo "  - Run Options: $docker_run_options"
           echo ""
           echo "Validation:"
           echo "  - Version: $validation_version"
