@@ -15,7 +15,13 @@ on:
         description: 'Docker Hub username'
         required: false
       DOCKERHUB_TOKEN:
-        description: 'Docker Hub token'
+        description: 'Docker Hub access token'
+        required: false
+      PYPI_API_TOKEN:
+        description: 'PyPI API token (required for token-based authentication)'
+        required: false
+      TEST_PYPI_API_TOKEN:
+        description: 'Test PyPI API token (required for token-based authentication)'
         required: false
     outputs:
       version:
@@ -107,6 +113,10 @@ jobs:
       version: ${{ needs.compute-version.outputs.version }}
       checkout-sha: ${{ github.sha }}
       artifact-name: 'staging-python-package'
+      auth-method: ${{ needs.config.outputs.python_auth_method }}
+    secrets:
+      PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+      TEST_PYPI_API_TOKEN: ${{ secrets.TEST_PYPI_API_TOKEN }}
 
   dockerhub-rc:
     name: Staging Release to DockerHub

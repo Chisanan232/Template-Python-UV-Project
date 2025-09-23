@@ -32,10 +32,16 @@ on:
         type: string
     secrets:
       DOCKERHUB_USERNAME:
-        description: 'Docker Hub username'
+        description: 'DockerHub username'
         required: false
       DOCKERHUB_TOKEN:
-        description: 'Docker Hub token'
+        description: 'DockerHub access token'
+        required: false
+      PYPI_API_TOKEN:
+        description: 'PyPI API token (required for token-based authentication)'
+        required: false
+      TEST_PYPI_API_TOKEN:
+        description: 'Test PyPI API token (required for token-based authentication)'
         required: false
     outputs:
       version:
@@ -365,6 +371,10 @@ jobs:
       version: ${{ needs.bump_version.outputs.version }}
       checkout-sha: ${{ needs.bump_version.outputs.new_sha }}
       artifact-name: 'python-package-production'
+      auth-method: ${{ needs.config.outputs.python_auth_method }}
+    secrets:
+      PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+      TEST_PYPI_API_TOKEN: ${{ secrets.TEST_PYPI_API_TOKEN }}
 
   release_docker_hub:
     name: Release to DockerHub

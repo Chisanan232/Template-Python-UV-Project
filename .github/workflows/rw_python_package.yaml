@@ -33,6 +33,18 @@ on:
         required: false
         default: 'python-package'
         type: string
+      auth-method:
+        description: 'Authentication method: oidc or token'
+        required: false
+        default: 'oidc'
+        type: string
+    secrets:
+      PYPI_API_TOKEN:
+        description: 'PyPI API token (only required if auth-method is token)'
+        required: false
+      TEST_PYPI_API_TOKEN:
+        description: 'Test PyPI API token (only required if auth-method is token for TestPyPI)'
+        required: false
 
     outputs:
       build-success:
@@ -119,19 +131,34 @@ jobs:
           path: dist/
           retention-days: 30
 
-      - name: Publish to PyPI
-        if: inputs.operation == 'publish-pypi'
-        run: |
-          echo "🚀 Publishing to PyPI..."
-          uv publish
-          echo "✅ Published to PyPI successfully"
+      - name: Setup PyPI OIDC Authentication
+        if: contains(fromJSON('["publish-pypi", "publish-testpypi"]'), inputs.operation) && inputs.auth-method == 'oidc'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          print-hash: true
+          verify-metadata: true
+          packages-dir: dist/
+          repository-url: ${{ inputs.operation == 'publish-testpypi' && 'https://test.pypi.org/legacy/' || 'https://upload.pypi.org/legacy/' }}
 
-      - name: Publish to TestPyPI
-        if: inputs.operation == 'publish-testpypi'
+      - name: Setup PyPI Token Authentication
+        if: contains(fromJSON('["publish-pypi", "publish-testpypi"]'), inputs.operation) && inputs.auth-method == 'token'
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ inputs.operation == 'publish-pypi' && secrets.PYPI_API_TOKEN || secrets.TEST_PYPI_API_TOKEN }}
+          TWINE_REPOSITORY_URL: ${{ inputs.operation == 'publish-testpypi' && 'https://test.pypi.org/legacy/' || 'https://upload.pypi.org/legacy/' }}
         run: |
-          echo "🚀 Publishing to TestPyPI..."
-          uv publish --publish-url https://test.pypi.org/legacy/
-          echo "✅ Published to TestPyPI successfully"
+          echo "🔑 Using PyPI token authentication..."
+          
+          # Verify token is available
+          if [ -z "$TWINE_PASSWORD" ]; then
+            echo "❌ Error: PyPI API token not found in secrets"
+            echo "Please ensure ${{ inputs.operation == 'publish-pypi' && 'PYPI_API_TOKEN' || 'TEST_PYPI_API_TOKEN' }} is set in repository secrets"
+            exit 1
+          fi
+          
+          echo "🚀 Publishing to ${{ inputs.operation == 'publish-pypi' && 'PyPI' || 'TestPyPI' }} using token authentication..."
+          uv publish ${{ inputs.operation == 'publish-testpypi' && '--publish-url https://test.pypi.org/legacy/' || '' }}
+          echo "✅ Published to ${{ inputs.operation == 'publish-pypi' && 'PyPI' || 'TestPyPI' }} successfully"
 
       - name: Operation summary
         run: |
@@ -139,4 +166,8 @@ jobs:
           echo "- **Operation**: ${{ inputs.operation }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Version**: ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Python**: ${{ inputs.python-version }}" >> $GITHUB_STEP_SUMMARY
+          if [[ "${{ inputs.operation }}" == "publish-pypi" || "${{ inputs.operation }}" == "publish-testpypi" ]]; then
+            echo "- **Auth Method**: ${{ inputs.auth-method == 'oidc' && '🔒 OIDC (Trusted Publisher)' || '🔑 API Token' }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Repository**: ${{ inputs.operation == 'publish-pypi' && 'PyPI (production)' || 'TestPyPI (staging)' }}" >> $GITHUB_STEP_SUMMARY
+          fi
           echo "- **Status**: ✅ Completed successfully" >> $GITHUB_STEP_SUMMARY
