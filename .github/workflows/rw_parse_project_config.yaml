@@ -112,6 +112,9 @@ jobs:
       package_name: ${{ steps.parse.outputs.package_name }}
       base_branch: ${{ steps.parse.outputs.base_branch }}
       
+      # Python Package Configuration
+      python_auth_method: ${{ steps.parse.outputs.python_auth_method }}
+      
       # Git Configuration
       git_commit_name: ${{ steps.parse.outputs.git_commit_name }}
       git_commit_email: ${{ steps.parse.outputs.git_commit_email }}
@@ -191,6 +194,9 @@ jobs:
           package_name=$(get_config ".project.package_name" "${{ github.event.repository.name }}")
           base_branch=$(get_config ".project.base_branch" "master")
           
+          # Parse Python Package Configuration
+          python_auth_method=$(get_config ".python.auth_method" "oidc")
+          
           # Parse Git Configuration
           git_commit_name=$(get_config ".git.commit.name" "GitHub Actions Bot")
           git_commit_email=$(get_config ".git.commit.email" "actions@github.com")
@@ -238,6 +244,8 @@ jobs:
           echo "package_name=$package_name" >> $GITHUB_OUTPUT
           echo "base_branch=$base_branch" >> $GITHUB_OUTPUT
           
+          echo "python_auth_method=$python_auth_method" >> $GITHUB_OUTPUT
+          
           echo "git_commit_name=$git_commit_name" >> $GITHUB_OUTPUT
           echo "git_commit_email=$git_commit_email" >> $GITHUB_OUTPUT
           
@@ -273,6 +281,9 @@ jobs:
           echo "  - Name: $project_name"
           echo "  - Package: $package_name"
           echo "  - Base Branch: $base_branch"
+          echo ""
+          echo "Python Package:"
+          echo "  - Auth Method: $python_auth_method"
           echo ""
           echo "Git:"
           echo "  - Commit Name: $git_commit_name"

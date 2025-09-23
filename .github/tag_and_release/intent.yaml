@@ -31,6 +31,12 @@ project:
   package_name: ~                   # Defaults to repository name if not set
   base_branch: master               # Main/default branch for the project
 
+# === PYTHON PACKAGE CONFIGURATION ===
+python:
+  auth_method: oidc                 # oidc | token - Authentication method for PyPI uploads
+  # OIDC (Trusted Publisher) - More secure, no secrets needed (recommended)
+  # Token - Traditional API token authentication (requires PYPI_API_TOKEN secret)
+
 # === GIT CONFIGURATION ===
 git:
   commit:
@@ -85,7 +91,13 @@ docs:
 #      # Flexible Docker run options - supports any Docker run parameters
 #      run_options: "-e CUSTOM_TOKEN=custom_test_value -e NODE_ENV=production"
 #
-# 4. Advanced Docker configuration examples:
+# 4. Python package authentication configuration:
+#    python:
+#      auth_method: oidc       # Use OIDC (Trusted Publisher) - more secure
+#      # OR
+#      auth_method: token      # Use API token - requires PYPI_API_TOKEN secret
+#
+# 5. Advanced Docker configuration examples:
 #    docker:
 #      run_options: "-e API_KEY=test123 -e DB_HOST=localhost -v /tmp:/app/tmp --network mynet"
 #      # Multiple environment variables, volume mounts, custom networks, etc.
