@@ -30,11 +30,6 @@ on:
         required: false
         default: ''
         type: string
-      python-package-workflow:
-        description: 'Path to Python package workflow (for OIDC authentication in child project)'
-        required: false
-        default: './.github/workflows/rw_python_package.yaml'
-        type: string
     secrets:
       DOCKERHUB_USERNAME:
         description: 'Docker Hub username'
@@ -362,7 +357,7 @@ jobs:
       github_auth_token: ${{ secrets.GITHUB_TOKEN }}
 
   release_python:
-    uses: ${{ inputs.python-package-workflow }}
+    uses: Chisanan232/Template-Python-UV-Project/.github/workflows/rw_python_package.yaml@master
     needs: [config, intent, bump_version, build_git-tag_and_create_github-release]
     if: needs.intent.outputs.do_release == 'true' && needs.intent.outputs.python != 'skip'
     with:
