@@ -10,6 +10,11 @@ on:
         required: false
         default: 'patch'
         type: string
+      python-package-workflow:
+        description: 'Path to Python package workflow (for OIDC authentication in child project)'
+        required: false
+        default: './.github/workflows/rw_python_package.yaml'
+        type: string
     secrets:
       DOCKERHUB_USERNAME:
         description: 'Docker Hub username'
@@ -100,7 +105,7 @@ jobs:
       github_auth_token: ${{ secrets.GITHUB_TOKEN }}
 
   pypi-test:
-    uses: Chisanan232/Template-Python-UV-Project/.github/workflows/rw_python_package.yaml@master
+    uses: ${{ inputs.python-package-workflow }}
     needs: [config, compute-version, build_git-tag_and_create_github-release]
     with:
       operation: 'publish-testpypi'
