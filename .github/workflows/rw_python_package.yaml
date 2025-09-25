@@ -161,8 +161,7 @@ jobs:
             echo "Publishing to TestPyPI..."
             uv publish \
               --publish-url https://test.pypi.org/legacy/ \
-              --username __token__ \
-              --password ${{ secrets.TEST_PYPI_API_TOKEN }} \
+              --token ${{ secrets.TEST_PYPI_API_TOKEN }} \
               --verbose
           else
             echo "Publishing to PyPI..."
