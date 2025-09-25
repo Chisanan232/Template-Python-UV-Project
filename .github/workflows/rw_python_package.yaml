@@ -131,7 +131,7 @@ jobs:
           path: dist/
           retention-days: 30
 
-      - name: Setup PyPI OIDC Authentication
+      - name: Publish to PyPI using OIDC Authentication
         if: contains(fromJSON('["publish-pypi", "publish-testpypi"]'), inputs.operation) && inputs.auth-method == 'oidc'
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
@@ -140,7 +140,7 @@ jobs:
           packages-dir: dist/
           repository-url: ${{ inputs.operation == 'publish-testpypi' && 'https://test.pypi.org/legacy/' || 'https://upload.pypi.org/legacy/' }}
 
-      - name: Setup PyPI Token Authentication
+      - name: Publish to PyPI using Token Authentication
         if: contains(fromJSON('["publish-pypi", "publish-testpypi"]'), inputs.operation) && inputs.auth-method == 'token'
         env:
           UV_PUBLISH_TOKEN: ${{ inputs.operation == 'publish-pypi' && secrets.PYPI_API_TOKEN || secrets.TEST_PYPI_API_TOKEN }}
