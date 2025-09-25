@@ -33,7 +33,7 @@ project:
 
 # === PYTHON PACKAGE CONFIGURATION ===
 python:
-  auth_method: oidc                 # oidc | token - Authentication method for PyPI uploads
+  auth_method: token                 # oidc | token - Authentication method for PyPI uploads
   # OIDC (Trusted Publisher) - More secure, no secrets needed (recommended)
   # Token - Traditional API token authentication (requires PYPI_API_TOKEN secret)
 
