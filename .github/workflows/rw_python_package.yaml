@@ -143,21 +143,28 @@ jobs:
       - name: Setup PyPI Token Authentication
         if: contains(fromJSON('["publish-pypi", "publish-testpypi"]'), inputs.operation) && inputs.auth-method == 'token'
         env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ inputs.operation == 'publish-pypi' && secrets.PYPI_API_TOKEN || secrets.TEST_PYPI_API_TOKEN }}
-          TWINE_REPOSITORY_URL: ${{ inputs.operation == 'publish-testpypi' && 'https://test.pypi.org/legacy/' || 'https://upload.pypi.org/legacy/' }}
+          UV_PUBLISH_TOKEN: ${{ inputs.operation == 'publish-pypi' && secrets.PYPI_API_TOKEN || secrets.TEST_PYPI_API_TOKEN }}
         run: |
-          echo "🔑 Using PyPI token authentication..."
+          echo "🔑 Using PyPI token authentication with UV..."
           
           # Verify token is available
-          if [ -z "$TWINE_PASSWORD" ]; then
+          if [ -z "$UV_PUBLISH_TOKEN" ]; then
             echo "❌ Error: PyPI API token not found in secrets"
             echo "Please ensure ${{ inputs.operation == 'publish-pypi' && 'PYPI_API_TOKEN' || 'TEST_PYPI_API_TOKEN' }} is set in repository secrets"
             exit 1
           fi
           
-          echo "🚀 Publishing to ${{ inputs.operation == 'publish-pypi' && 'PyPI' || 'TestPyPI' }} using token authentication..."
-          uv publish ${{ inputs.operation == 'publish-testpypi' && '--publish-url https://test.pypi.org/legacy/' || '' }}
+          echo "🚀 Publishing to ${{ inputs.operation == 'publish-pypi' && 'PyPI' || 'TestPyPI' }} using UV token authentication..."
+          
+          # UV publish with token authentication
+          if [ "${{ inputs.operation }}" = "publish-testpypi" ]; then
+            echo "Publishing to TestPyPI..."
+            uv publish --publish-url https://test.pypi.org/legacy/ --username __token__ --password "$UV_PUBLISH_TOKEN"
+          else
+            echo "Publishing to PyPI..."
+            uv publish --username __token__ --password "$UV_PUBLISH_TOKEN"
+          fi
+          
           echo "✅ Published to ${{ inputs.operation == 'publish-pypi' && 'PyPI' || 'TestPyPI' }} successfully"
 
       - name: Operation summary
