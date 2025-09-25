@@ -79,6 +79,11 @@ on:
         description: 'Version for validation testing'
         value: ${{ jobs.parse-config.outputs.validation_test_version }}
       
+      # Python Package Configuration
+      python_auth_method:
+        description: 'Python package authentication method (oidc or token)'
+        value: ${{ jobs.parse-config.outputs.python_auth_method }}
+      
       # Documentation Configuration
       docs_ci_cd_path:
         description: 'CI/CD documentation path'
