@@ -159,10 +159,10 @@ jobs:
           # UV publish with token authentication
           if [ "${{ inputs.operation }}" = "publish-testpypi" ]; then
             echo "Publishing to TestPyPI..."
-            uv publish --publish-url https://test.pypi.org/legacy/ --token "$UV_PUBLISH_TOKEN"
+            uv publish --publish-url https://test.pypi.org/legacy/ --token ${{ secrets.TEST_PYPI_API_TOKEN }}
           else
             echo "Publishing to PyPI..."
-            uv publish --token "$UV_PUBLISH_TOKEN"
+            uv publish --token ${{ secrets.PYPI_API_TOKEN }}
           fi
           
           echo "✅ Published to ${{ inputs.operation == 'publish-pypi' && 'PyPI' || 'TestPyPI' }} successfully"
