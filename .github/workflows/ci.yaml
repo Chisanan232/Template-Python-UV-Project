@@ -12,9 +12,7 @@ on:
 #     For GitHub Action
       - ".github/workflows/ci.yaml"
       - ".github/workflows/rw_build_and_test.yaml"
-      - ".github/workflows/rw_uv_run_test.yaml"
       - ".github/workflows/rw_run_all_test_and_record.yaml"
-      - ".github/workflows/rw_uv_run_test_with_multi_py_versions.yaml"
 #     For source code and test
       - "<your_package_name>/**/*.py"
       - "!**/__pkg_info__.py"
@@ -41,9 +39,7 @@ on:
 #     For GitHub Action
       - ".github/workflows/ci.yaml"
       - ".github/workflows/rw_build_and_test.yaml"
-      - ".github/workflows/rw_uv_run_test.yaml"
       - ".github/workflows/rw_run_all_test_and_record.yaml"
-      - ".github/workflows/rw_uv_run_test_with_multi_py_versions.yaml"
 #     For source code and test
       - "<your_package_name>/**/*.py"
       - "!**/__pkg_info__.py"
@@ -62,7 +58,7 @@ on:
 jobs:
   build-and-test_all:
 #    name: Run all tests and organize all test reports
-    uses: Chisanan232/Template-Python-UV-Project/.github/workflows/rw_run_all_test_and_record.yaml@master
+    uses: ./.github/workflows/rw_run_all_test_and_record.yaml
     secrets:
       codecov_token: ${{ secrets.CODECOV_TOKEN }}
       sonar_token: ${{ secrets.SONAR_TOKEN }}

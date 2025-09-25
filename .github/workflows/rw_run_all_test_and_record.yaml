@@ -22,7 +22,7 @@ on:
 jobs:
   build-and-test:
 #    name: Run all tests and organize all test reports
-    uses: Chisanan232/Template-Python-UV-Project/.github/workflows/rw_build_and_test.yaml@master
+    uses: ./.github/workflows/rw_build_and_test.yaml
     with:
       run_e2e: ${{ inputs.run_e2e }}
     secrets:
