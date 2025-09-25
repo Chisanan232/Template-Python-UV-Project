@@ -165,11 +165,12 @@ jobs:
               --verbose
           else
             echo "Publishing to PyPI..."
-            uv publish --token ${{ secrets.PYPI_API_TOKEN }} --verbose
+            uv publish \
+              --token ${{ secrets.PYPI_API_TOKEN }} \
+              --verbose
           fi
           
           echo "✅ Published to ${{ inputs.operation == 'publish-pypi' && 'PyPI' || 'TestPyPI' }} successfully"
-#            uv publish --publish-url https://test.pypi.org/legacy/ --token ${{ secrets.TEST_PYPI_API_TOKEN }} --verbose
 
       - name: Operation summary
         run: |
