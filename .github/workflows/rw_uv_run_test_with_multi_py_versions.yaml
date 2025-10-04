@@ -120,7 +120,7 @@ jobs:
           if [ -n "${{ inputs.with-environment-variables }}" ]; then
             export ${{ inputs.with-environment-variables }}
           fi
-          uv run pytest ${{ matrix.test-path }}
+          E2E_TEST_API_TOKEN=${{ secrets.e2e_test_api_token }} uv run pytest ${{ matrix.test-path }}
         continue-on-error: ${{ inputs.keep_run_if_test_fail }}
         env:
           E2E_TEST_API_TOKEN: ${{ secrets.e2e_test_api_token }}
@@ -133,7 +133,7 @@ jobs:
           if [ -n "${{ inputs.with-environment-variables }}" ]; then
             export ${{ inputs.with-environment-variables }}
           fi
-          uv run pytest ${{ inputs.test_folder }}
+          E2E_TEST_API_TOKEN=${{ secrets.e2e_test_api_token }} uv run pytest ${{ inputs.test_folder }}
         continue-on-error: ${{ inputs.keep_run_if_test_fail }}
         env:
           E2E_TEST_API_TOKEN: ${{ secrets.e2e_test_api_token }}
