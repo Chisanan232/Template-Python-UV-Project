@@ -50,8 +50,9 @@ runs:
       working-directory: ${{ inputs.working-directory }}
       shell: bash
       run: |
-        if [ "${{ inputs.dependency-groups }}" = "none" ]; then
-          echo "Skipping dependency installation"
+        if [ "${{ inputs.dependency-groups }}" = "" ]; then
+          echo "Installing dependencies without groups"
+          uv sync
         else
           echo "Installing dependencies: [${{ inputs.dependency-groups }}]"
           uv sync --group ${{ inputs.dependency-groups }}
