@@ -90,7 +90,7 @@ jobs:
           echo "Checking for required CI script files..."
           
           # Create scripts directory if it doesn't exist
-          mkdir -p scripts/ci
+          mkdir -p ./scripts/ci
           
           # Function to download file if it doesn't exist
           download_if_missing() {
@@ -109,9 +109,9 @@ jobs:
           # Download required files from template repository
           BASE_URL="https://raw.githubusercontent.com/Chisanan232/Template-Python-UV-Project/master"
           
-          download_if_missing "scripts/pyproject.toml" "$BASE_URL/scripts/pyproject.toml"
-          download_if_missing "scripts/uv.lock" "$BASE_URL/scripts/uv.lock"
-          download_if_missing "scripts/ci/release_intent.py" "$BASE_URL/scripts/ci/release_intent.py"
+          download_if_missing "./scripts/pyproject.toml" "$BASE_URL/scripts/pyproject.toml"
+          download_if_missing "./scripts/uv.lock" "$BASE_URL/scripts/uv.lock"
+          download_if_missing "./scripts/ci/release_intent.py" "$BASE_URL/scripts/ci/release_intent.py"
           
           echo "All required CI script files are ready!"
 
