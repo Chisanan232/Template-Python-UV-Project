@@ -63,9 +63,6 @@ jobs:
 
       - name: Setup Python with UV
         uses: Chisanan232/Template-Python-UV-Project/.github/actions/setup-python-uv@master
-        with:
-          install-dependencies: 'true'
-          dependency-groups: 'release-ci'
 
       - name: Compute staging version
         id: version
