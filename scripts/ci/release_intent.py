@@ -31,7 +31,7 @@ class ReleaseIntentError(Exception):
 
 def load_schema() -> SchemaType:
     """Load and return the JSON schema for release intent validation."""
-    schema_path = Path(".github/tag_and_release/schema.json")
+    schema_path = Path("../.github/tag_and_release/schema.json")
 
     if not schema_path.exists():
         raise ReleaseIntentError(f"Schema file not found: {schema_path}")
@@ -45,7 +45,7 @@ def load_schema() -> SchemaType:
 
 def load_intent_file() -> Optional[ReleaseIntent]:
     """Load the release intent YAML file if it exists."""
-    intent_path = Path(".github/tag_and_release/intent.yaml")
+    intent_path = Path("../.github/tag_and_release/intent.yaml")
 
     if not intent_path.exists():
         return None
