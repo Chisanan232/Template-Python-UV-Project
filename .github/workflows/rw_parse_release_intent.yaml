@@ -114,13 +114,22 @@ jobs:
           download_if_missing "./scripts/ci/release_intent.py" "$BASE_URL/scripts/ci/release_intent.py"
           
           echo "All required CI script files are ready!"
+          
+          echo "Check list of downloaded files:"
+          ls -la
+          
+          echo "Check list of downloaded files under ./scripts:"
+          ls -la ./scripts
+          
+          echo "Check list of downloaded files under ./scripts/ci:"
+          ls -la ./scripts/ci
 
       - name: Setup Python with UV
         uses: Chisanan232/Template-Python-UV-Project/.github/actions/setup-python-uv@master
         with:
           python-version: ${{ inputs.python-version }}
           install-dependencies: 'true'
-          working-directory: 'scripts'
+          working-directory: './scripts'
 
       - name: Parse release intent
         id: intent
