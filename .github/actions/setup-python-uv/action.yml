@@ -17,6 +17,10 @@ inputs:
     description: 'Whether to cache UV dependencies'
     required: false
     default: 'true'
+  working-directory:
+    description: 'The working directory to use for installation'
+    required: false
+    default: ${{ github.workspace }}
 
 runs:
   using: 'composite'
@@ -43,6 +47,7 @@ runs:
 
     - name: Install dependencies
       if: inputs.install-dependencies == 'true'
+      working-directory: ${{ inputs.working-directory }}
       shell: bash
       run: |
         if [ "${{ inputs.dependency-groups }}" = "none" ]; then
@@ -53,6 +58,7 @@ runs:
         fi
 
     - name: Verify installation
+      working-directory: ${{ inputs.working-directory }}
       shell: bash
       run: |
         echo "Python version: $(python --version)"
