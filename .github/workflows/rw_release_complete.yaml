@@ -55,7 +55,7 @@ on:
         value: ${{ jobs.intent.outputs.python != 'skip' && jobs.intent.outputs.do_release == 'true' }}
       docker_released:
         description: 'Whether Docker images were released'
-        value: ${{ jobs.intent.outputs.docker != 'skip' && jobs.intent.outputs.do_release == 'true' }}
+        value: ${{ jobs.check-dockerfile.outputs.has_dockerfile == 'true' && jobs.intent.outputs.docker != 'skip' && jobs.intent.outputs.do_release == 'true' }}
       docs_released:
         description: 'Whether documentation was versioned'
         value: ${{ jobs.prepare_docs_matrix.outputs.has_sections == 'true' && jobs.intent.outputs.do_release == 'true' }}
@@ -70,6 +70,26 @@ jobs:
   config:
     name: Parse Configuration
     uses: Chisanan232/Template-Python-UV-Project/.github/workflows/rw_parse_project_config.yaml@master
+
+  check-dockerfile:
+    name: Check Dockerfile Exists
+    runs-on: ubuntu-latest
+    outputs:
+      has_dockerfile: ${{ steps.check.outputs.has_dockerfile }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Check for Dockerfile
+        id: check
+        run: |
+          if [ -f "Dockerfile" ]; then
+            echo "✅ Dockerfile found"
+            echo "has_dockerfile=true" >> $GITHUB_OUTPUT
+          else
+            echo "⚠️ No Dockerfile found - Docker processes will be skipped"
+            echo "has_dockerfile=false" >> $GITHUB_OUTPUT
+          fi
 
   intent:
     uses: Chisanan232/Template-Python-UV-Project/.github/workflows/rw_parse_release_intent.yaml@master
@@ -376,8 +396,8 @@ jobs:
   release_docker_hub:
     name: Release to DockerHub
     uses: Chisanan232/Template-Python-UV-Project/.github/workflows/rw_docker_operations.yaml@master
-    needs: [config, intent, bump_version, build_git-tag_and_create_github-release]
-    if: needs.intent.outputs.do_release == 'true' && needs.intent.outputs.docker != 'skip'
+    needs: [config, check-dockerfile, intent, bump_version, build_git-tag_and_create_github-release]
+    if: needs.check-dockerfile.outputs.has_dockerfile == 'true' && needs.intent.outputs.do_release == 'true' && needs.intent.outputs.docker != 'skip'
     secrets:
       dockerhub-user: ${{ secrets.DOCKERHUB_USERNAME }}
       registry-token: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -393,8 +413,8 @@ jobs:
   release_docker_ghcr:
     name: Release to GHCR
     uses: Chisanan232/Template-Python-UV-Project/.github/workflows/rw_docker_operations.yaml@master
-    needs: [config, intent, bump_version, build_git-tag_and_create_github-release]
-    if: needs.intent.outputs.do_release == 'true' && needs.intent.outputs.docker != 'skip'
+    needs: [config, check-dockerfile, intent, bump_version, build_git-tag_and_create_github-release]
+    if: needs.check-dockerfile.outputs.has_dockerfile == 'true' && needs.intent.outputs.do_release == 'true' && needs.intent.outputs.docker != 'skip'
     with:
       operation: 'push'
       registry: ${{ needs.config.outputs.docker_registry_ghcr }}
