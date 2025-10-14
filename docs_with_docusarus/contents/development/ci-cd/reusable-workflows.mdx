@@ -339,10 +339,40 @@ jobs:
 
 ### Conditional Execution Patterns
 
-Reusable workflows support sophisticated conditional execution based on configuration and change detection:
+Reusable workflows support sophisticated conditional execution based on configuration, change detection, and environment checks:
 
 ```yaml
 jobs:
+  # Check for Dockerfile (New Feature)
+  check-dockerfile:
+    name: Check Dockerfile Exists
+    runs-on: ubuntu-latest
+    outputs:
+      has_dockerfile: ${{ steps.check.outputs.has_dockerfile }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+      - name: Check for Dockerfile
+        id: check
+        run: |
+          if [ -f "Dockerfile" ]; then
+            echo "has_dockerfile=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_dockerfile=false" >> $GITHUB_OUTPUT
+          fi
+
+  # Conditional Docker publishing with Dockerfile detection
+  publish_docker:
+    needs: [parse_intent, check-dockerfile, build_docker]
+    if: |
+      needs.check-dockerfile.outputs.has_dockerfile == 'true' &&
+      (needs.parse_intent.outputs.docker == 'force' ||
+       (needs.parse_intent.outputs.docker == 'auto' && needs.detect_changes.outputs.docker == 'true'))
+    uses: ./.github/workflows/rw_docker_operations.yaml
+    with:
+      operation: 'push'
+      registry: 'ghcr.io'
+
   # Conditional Python publishing
   publish_python:
     needs: [parse_intent, build_python]
@@ -354,6 +384,12 @@ jobs:
       operation: 'publish'
       registry: 'pypi'
 ```
+
+**Key Conditional Patterns**:
+- **Dockerfile Detection** 🆕: Docker jobs only run when `Dockerfile` exists in repository root
+- **Configuration-Based**: Jobs respect `force`, `auto`, or `skip` settings from intent
+- **Change Detection**: Auto mode considers file changes for smart execution
+- **Multi-Condition**: Combines environment checks with configuration for robust control
 
 ## Architecture Benefits
 
