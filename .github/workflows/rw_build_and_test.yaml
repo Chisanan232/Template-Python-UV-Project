@@ -75,7 +75,7 @@ jobs:
         (github.event_name == 'push' && github.ref_name == 'master')
       }}
     needs: run_unit-test
-    uses: Chisanan232/Template-Python-UV-Project/.github/workflows/rw_organize_test_cov_reports.yaml@master
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_organize_test_cov_reports.yaml@master
     with:
       test_type: unit-test
 
@@ -86,7 +86,7 @@ jobs:
         (github.event_name == 'push' && github.ref_name == 'master')
       }}
     needs: run_integration-test
-    uses: Chisanan232/Template-Python-UV-Project/.github/workflows/rw_organize_test_cov_reports.yaml@master
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_organize_test_cov_reports.yaml@master
     with:
       test_type: integration-test
 
@@ -97,7 +97,7 @@ jobs:
         (github.event_name == 'push' && github.ref_name == 'master')
       }}
     needs: run_e2e-test
-    uses: Chisanan232/Template-Python-UV-Project/.github/workflows/rw_organize_test_cov_reports.yaml@master
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_organize_test_cov_reports.yaml@master
     with:
       test_type: e2e-test
 
@@ -108,7 +108,7 @@ jobs:
         (github.event_name == 'push' && github.ref_name == 'master')
       }}
     needs: run_contract-test
-    uses: Chisanan232/Template-Python-UV-Project/.github/workflows/rw_organize_test_cov_reports.yaml@master
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_organize_test_cov_reports.yaml@master
     with:
       test_type: contract-test
 
@@ -123,7 +123,7 @@ jobs:
       }}
 #    needs: [run_unit-test, run_integration-test, run_contract-test]
     needs: [run_unit-test, run_integration-test, run_contract-test]
-    uses: Chisanan232/Template-Python-UV-Project/.github/workflows/rw_organize_test_cov_reports.yaml@master
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_organize_test_cov_reports.yaml@master
     with:
       test_type: all-test
 
@@ -138,6 +138,6 @@ jobs:
       }}
 #    needs: [run_unit-test, run_integration-test, run_contract-test, run_e2e-test]
     needs: [run_unit-test, run_integration-test, run_contract-test, run_e2e-test]
-    uses: Chisanan232/Template-Python-UV-Project/.github/workflows/rw_organize_test_cov_reports.yaml@master
+    uses: Chisanan232/GitHub-Action_Reusable_Workflows-Python/.github/workflows/rw_organize_test_cov_reports.yaml@master
     with:
       test_type: all-test
