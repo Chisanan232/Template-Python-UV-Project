@@ -7,6 +7,35 @@ sidebar_position: 3
 
 The release workflows for this template are now maintained in the centralized repository `Chisanan232/GitHub-Action_Reusable_Workflows-Python`. This project consumes those reusable workflows for production, validation, and staging releases while keeping only minimal configuration locally.
 
+## Release workflows
+
+### Production release (`release.yml`)
+[![Release](https://github.com/Chisanan232/Template-Python-UV-Project/actions/workflows/release.yml/badge.svg)](https://github.com/Chisanan232/Template-Python-UV-Project/actions/workflows/release.yml)
+
+Publishes production artifacts (PyPI package, container images, docs) using the centralized `rw_release_complete.yaml` workflow logic.
+
+:::note Documentation
+See the reusable workflow guide for production releases: [rw_release_complete.yaml](https://chisanan232.github.io/GitHub-Action_Reusable_Workflows-Python/docs/next/workflows/release/rw_release_complete) (hosted in `Chisanan232/GitHub-Action_Reusable_Workflows-Python`).
+:::
+
+### Release staging (`release-staging.yml`)
+[![Release Staging](https://github.com/Chisanan232/Template-Python-UV-Project/actions/workflows/release-staging.yml/badge.svg)](https://github.com/Chisanan232/Template-Python-UV-Project/actions/workflows/release-staging.yml)
+
+Creates staging/TestPyPI packages, RC container images, and preview documentation to test releases before production.
+
+:::note Documentation
+Reusable staging workflow reference: [rw_release_staging_complete.yaml](https://chisanan232.github.io/GitHub-Action_Reusable_Workflows-Python/docs/next/workflows/release/rw_release_staging_complete).
+:::
+
+### Release validation (`release-validate.yml`)
+[![Release Validation](https://github.com/Chisanan232/Template-Python-UV-Project/actions/workflows/release-validate.yml/badge.svg)](https://github.com/Chisanan232/Template-Python-UV-Project/actions/workflows/release-validate.yml)
+
+Dry-runs the release pipeline for pull requests, verifying builds and security checks without publishing artifacts.
+
+:::note Documentation
+Reusable validation workflow details: [rw_release_validation_complete.yaml](https://chisanan232.github.io/GitHub-Action_Reusable_Workflows-Python/docs/next/workflows/release/rw_release_validation_complete).
+:::
+
 ## Overview
 
 - **Centralized logic**: All release orchestration lives in the reusable workflow repository.
