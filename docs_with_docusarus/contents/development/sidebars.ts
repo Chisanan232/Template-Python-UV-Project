@@ -37,13 +37,8 @@ const sidebars: SidebarsConfig = {
       items: [
         {
           type: 'doc',
-          id: 'architecture/architecture-overview',
-          label: '🏛️ Template Architecture Overview',
-        },
-        {
-          type: 'doc',
-          id: 'architecture/project-structure',
-          label: '📁 Project Structure',
+          id: 'architecture',
+          label: '🏛️ Architecture Overview',
         },
       ],
     },

@@ -5,66 +5,69 @@ sidebar_position: 1
 slug: architecture/overview
 ---
 
-# Slack MCP Server Architecture
+# Template Architecture Overview
 
-This section provides comprehensive documentation of the Slack MCP Server architecture, covering all major components and their interactions.
+This page explains how the Python UV Project Template is organized and how the main building blocks (source code, automation, and documentation) work together. Use it as a map when adapting the template to your own project.
 
-## Architecture Components
+## Architecture Pillars
 
-The Slack MCP Server is built with a modular architecture that supports multiple deployment modes and integration patterns:
+- **Application Layer (`src/`)** – Houses your Python package using the modern src-layout.
+- **Quality & Testing (`test/`, `pre-commit`)** – Provides pytest-based suites, coverage reporting, linting, and type-checking tooling configured through uv.
+- **Automation (`.github/workflows/`)** – Collection of GitHub Actions for CI, releases, docs, Docker, and supporting tasks.
+- **Documentation (`docs_with_docusarus/`, `docs_with_mkdocs/`)** – Docusaurus (primary) and MkDocs (optional) documentation systems ready for customization.
 
-### **🏗️ [Project Structure](/dev/next/architecture/project-structure)**
-- Overall source code organization
-- Design patterns and principles
-- Directory structure and key components
-- Development workflow and conventions
-
-## System Overview
+## Repository Topology
 
 ```mermaid
-graph TB
-    subgraph "Client Layer"
-        A[MCP Clients]
-        B[Slack Workspace]
+flowchart LR
+    subgraph Source
+        A[src/]
+        B[test/]
     end
-    
-    subgraph "Slack MCP Server"
-        C[MCP Server]
-        D[Webhook Server]
-        E[Integrated Server]
+    subgraph Automation
+        C[.github/workflows/]
+        D[scripts/]
     end
-    
-    subgraph "Backend Services"
-        F[Queue Backend]
-        G[Slack API]
+    subgraph Documentation
+        E[docs_with_docusarus/]
+        F[docs_with_mkdocs/]
     end
-    
+    subgraph Packaging
+        G[pyproject.toml]
+        H[uv.lock]
+    end
+
     A --> C
-    A --> E
-    B --> D
-    B --> E
+    B --> C
     C --> G
-    D --> F
-    E --> G
-    E --> F
+    C --> H
+    A --> E
+    A --> F
+    E --> C
 ```
 
-## Key Features
+## What Lives Where?
 
-- **Multiple Transport Options**: stdio, Server-Sent Events (SSE), and HTTP streaming
-- **Flexible Deployment**: Standalone MCP server, standalone webhook server, or integrated mode
-- **Event Processing**: Asynchronous Slack event handling with queue integration
-- **Security**: Request signature verification and token management
-- **Scalability**: Horizontal scaling support for webhook processing
+- **`src/`** – Your distributable package, including the default `types.py` example and `py.typed` marker for PEP 561 compliance.
+- **`test/`** – Unit and integration test scaffolding with pytest plugins preconfigured in `pyproject.toml`.
+- **`.github/workflows/`** – Automation entry points (CI, release, documentation, Docker, type distribution, etc.).
+- **`docs_with_docusarus/`** – Primary documentation site (this guide). Includes reusable content, versioning, and search configuration.
+- **`docs_with_mkdocs/`** – Alternate documentation stack if your team prefers MkDocs.
+- **`scripts/`** – Helper scripts invoked by workflows for packaging, docs, and build orchestration.
+- **`pyproject.toml` / `uv.lock`** – Single source of truth for dependencies, tool configuration, and packaging metadata.
 
-## Design Principles
+## How the Pieces Work Together
 
-1. **Modularity**: Clear separation between MCP and webhook functionality
-2. **Extensibility**: Easy to add new MCP tools and event handlers
-3. **Security**: Secure token handling and request verification
-4. **Performance**: Asynchronous processing and efficient resource usage
-5. **Reliability**: Robust error handling and recovery mechanisms
+1. **Develop locally with uv** – Use `uv sync` to install dependencies defined in `pyproject.toml` and locked in `uv.lock`.
+2. **Validate with pre-commit** – Preconfigured hooks (formatting, linting, type checking) keep commits consistent.
+3. **Run CI** – `ci.yaml` (regular) and `ci_includes_e2e_test.yaml` (extended) execute the same matrix of tests GitHub-side.
+4. **Ship releases** – Intent-driven workflows publish Python packages, container images, and docs from a single configuration file.
+5. **Publish docs** – Docusaurus builds run automatically after releases or documentation-only pull requests.
 
-## Next Steps
+## Related Guides
 
-Explore the detailed architecture documentation for each component to understand the implementation details, configuration options, and best practices for deployment and development.
+- **Structure & Files** → [Project Structure](./project-structure.mdx)
+- **CI/CD System** → [CI/CD Overview](../ci-cd/index.mdx)
+- **Type Checking** → [Type Checking with MyPy](../type-checking.mdx)
+
+Use these pages to drill into specific subsystems once you customize the template for your own project.
